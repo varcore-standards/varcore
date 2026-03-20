@@ -13,3 +13,10 @@ dist/
 .DS_Store
 .wrangler/
 *.js.map
+
+# Internal Claude Code session files — never commit
+CLAUDE.md
+SESSION_LOG.md
+NS-BUILD-STATE-*.md
+session-*-prompt.md
+*-prompt.md
