@@ -1,7 +1,6 @@
 import * as fs from "fs";
-import * as crypto from "crypto";
 import * as yaml from "js-yaml";
-import canonicalize from "canonicalize";
+import { canonicalHash } from "@varcore/core";
 import { validatePolicyConfig } from "./schema";
 import { evaluateParams, ConditionResult } from "./params-evaluator";
 import { resolveSchemaPack } from "./schemas/index";
@@ -70,9 +69,7 @@ export function mergePackRules(
  * Returns "sha256:<hex>".
  */
 export function computePolicyBundleHash(policy: PolicyConfig): string {
-  const canonical = canonicalize(policy as unknown as object) ?? "{}";
-  const hex = crypto.createHash("sha256").update(canonical).digest("hex");
-  return "sha256:" + hex;
+  return canonicalHash(policy);
 }
 
 /**

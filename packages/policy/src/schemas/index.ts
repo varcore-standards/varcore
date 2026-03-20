@@ -2,6 +2,12 @@ import { stripeEnforce } from "./stripe";
 import { githubEnforce } from "./github";
 import { awsS3Enforce } from "./aws-s3";
 import { pciDssStripe } from "./pci-dss";
+import { terraformEnforce } from "./terraform";
+import { euAiActEnforce } from "./eu-ai-act";
+import { hipaaEnforce } from "./hipaa";
+import { soc2Enforce } from "./soc2";
+import { gdprEnforce } from "./gdpr";
+import { iso27001Enforce } from "./iso27001";
 import type { SchemaPackDefinition } from "../types";
 import { PolicyLoadError } from "../types";
 
@@ -10,6 +16,12 @@ export const SCHEMA_PACKS: Record<string, SchemaPackDefinition> = {
   "github/enforce": githubEnforce,
   "aws-s3/enforce": awsS3Enforce,
   "pci-dss/stripe": pciDssStripe,
+  "terraform/enforce": terraformEnforce,
+  "eu-ai-act/enforce": euAiActEnforce,
+  "hipaa/enforce": hipaaEnforce,
+  "soc2/enforce": soc2Enforce,
+  "gdpr/enforce": gdprEnforce,
+  "iso27001/enforce": iso27001Enforce,
 };
 
 export function resolveSchemaPack(id: string): SchemaPackDefinition {

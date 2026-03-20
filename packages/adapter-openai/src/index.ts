@@ -4,18 +4,24 @@ export { createActionReceipt } from "./receipt";
 export type { CreateActionReceiptParams } from "./receipt";
 
 /**
- * wrapOpenAI — wraps an OpenAI-compatible client to intercept function calls
- * and emit VAR receipts for each tool invocation.
+ * wrapOpenAI — NOT YET IMPLEMENTED.
  *
- * Phase 0: returns the client unchanged (receipt emission deferred to Phase 1).
+ * Automatic interception of `client.chat.completions.create` is deferred to Phase 1.
+ * This function currently throws so that callers are not silently left without receipt
+ * coverage while believing the wrapper is active.
  *
- * @param client   Any object with a chat.completions.create method
- * @param _config  Adapter configuration (agent_id, key_path, receipt_file, etc.)
- * @returns        The client unchanged in Phase 0
+ * **Use the manual API instead:**
+ * ```ts
+ * import { createActionReceipt } from "@varcore/adapter-openai";
+ * const receipt = await createActionReceipt({ ... });
+ * ```
  *
- * TODO(phase-1): intercept client.chat.completions.create, parse tool_calls,
- * emit action_receipt or dead_letter_receipt for each, chain receipts correctly.
+ * @throws {Error} Always — automatic interception not yet implemented.
  */
-export function wrapOpenAI<T>(client: T, _config: import("./types").OpenAIAdapterConfig): T {
-  return client;
+export function wrapOpenAI<T>(_client: T, _config: import("./types").OpenAIAdapterConfig): T {
+  throw new Error(
+    "wrapOpenAI: automatic interception is not yet implemented. " +
+    "Use createActionReceipt() for manual receipt emission. " +
+    "See @varcore/adapter-openai README for usage."
+  );
 }

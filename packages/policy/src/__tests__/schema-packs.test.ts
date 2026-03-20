@@ -247,3 +247,101 @@ describe("computePolicyBundleHash", () => {
     expect(hash1).not.toBe(hash2);
   });
 });
+
+// ── SP17–SP18: eu-ai-act/enforce evaluation ──────────────────────────────────
+
+describe("eu-ai-act/enforce evaluation", () => {
+  const policy: PolicyConfig = {
+    default: "ALLOW",
+    rules: SCHEMA_PACKS["eu-ai-act/enforce"].rules,
+  };
+
+  test("SP17: llm_inference STEP_UP when risk_classification is high_risk", () => {
+    const r = evaluatePolicy("llm_inference", policy, { risk_classification: "high_risk" });
+    expect(r.decision).toBe("STEP_UP");
+  });
+
+  test("SP18: model_deployment STEP_UP when environment is production", () => {
+    const r = evaluatePolicy("model_deployment", policy, { environment: "production" });
+    expect(r.decision).toBe("STEP_UP");
+  });
+});
+
+// ── SP19–SP20: hipaa/enforce evaluation ──────────────────────────────────────
+
+describe("hipaa/enforce evaluation", () => {
+  const policy: PolicyConfig = {
+    default: "ALLOW",
+    rules: SCHEMA_PACKS["hipaa/enforce"].rules,
+  };
+
+  test("SP19: ehr_read BLOCK when patient_consent is false", () => {
+    const r = evaluatePolicy("ehr_read", policy, { patient_consent: false });
+    expect(r.decision).toBe("BLOCK");
+  });
+
+  test("SP20: ehr_delete BLOCK (tool-level, no params required)", () => {
+    const r = evaluatePolicy("ehr_delete", policy, {});
+    expect(r.decision).toBe("BLOCK");
+    expect(r.matched_rule).toBe("ehr_delete");
+  });
+});
+
+// ── SP21–SP22: soc2/enforce evaluation ───────────────────────────────────────
+
+describe("soc2/enforce evaluation", () => {
+  const policy: PolicyConfig = {
+    default: "ALLOW",
+    rules: SCHEMA_PACKS["soc2/enforce"].rules,
+  };
+
+  test("SP21: user_data_export BLOCK when requestor_authorized is false", () => {
+    const r = evaluatePolicy("user_data_export", policy, { requestor_authorized: false });
+    expect(r.decision).toBe("BLOCK");
+  });
+
+  test("SP22: backup_delete BLOCK (tool-level, no params required)", () => {
+    const r = evaluatePolicy("backup_delete", policy, {});
+    expect(r.decision).toBe("BLOCK");
+    expect(r.matched_rule).toBe("backup_delete");
+  });
+});
+
+// ── SP23–SP24: gdpr/enforce evaluation ───────────────────────────────────────
+
+describe("gdpr/enforce evaluation", () => {
+  const policy: PolicyConfig = {
+    default: "ALLOW",
+    rules: SCHEMA_PACKS["gdpr/enforce"].rules,
+  };
+
+  test("SP23: personal_data_collect BLOCK when lawful_basis is missing", () => {
+    const r = evaluatePolicy("personal_data_collect", policy, {});
+    expect(r.decision).toBe("BLOCK");
+  });
+
+  test("SP24: profiling_decision BLOCK when solely_automated is true", () => {
+    const r = evaluatePolicy("profiling_decision", policy, { solely_automated: true });
+    expect(r.decision).toBe("BLOCK");
+  });
+});
+
+// ── SP25–SP26: iso27001/enforce evaluation ───────────────────────────────────
+
+describe("iso27001/enforce evaluation", () => {
+  const policy: PolicyConfig = {
+    default: "ALLOW",
+    rules: SCHEMA_PACKS["iso27001/enforce"].rules,
+  };
+
+  test("SP25: asset_delete BLOCK when asset_classification is confidential", () => {
+    const r = evaluatePolicy("asset_delete", policy, { asset_classification: "confidential" });
+    expect(r.decision).toBe("BLOCK");
+  });
+
+  test("SP26: log_delete BLOCK (tool-level, no params required)", () => {
+    const r = evaluatePolicy("log_delete", policy, {});
+    expect(r.decision).toBe("BLOCK");
+    expect(r.matched_rule).toBe("log_delete");
+  });
+});

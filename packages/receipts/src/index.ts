@@ -3,6 +3,7 @@ import * as ed from "@noble/ed25519";
 import { createHash } from "crypto";
 import canonicalize from "canonicalize";
 import type { SigningProvider } from "@varcore/core";
+import { varcoreLog } from "@varcore/core";
 import { AsnConvert } from "@peculiar/asn1-schema";
 import { TimeStampResp, PKIStatus, TSTInfo } from "@peculiar/asn1-tsp";
 import { SignedData } from "@peculiar/asn1-cms";
@@ -122,6 +123,21 @@ const ACTION_RECEIPT_SIGNED_FIELDS = [
   "amount_minor_units",
   "billable",
   "billable_reason",
+  // Group 3: STEP_UP approval engine — links action to its pending approval
+  "pending_approval_id",
+] as const;
+
+// ── Group 3: STEP_UP approval engine signed fields ────────────────────────────
+
+const APPROVAL_RECEIPT_SIGNED_FIELDS = [
+  ...BASE_SIGNED_FIELDS,
+  "action_receipt_id",
+  "approval_receipt_id",
+  "tool_name",
+  "approval_outcome",
+  "approver",
+  "approval_dir",
+  "wait_duration_ms",
 ] as const;
 
 // DEAD_LETTER additional fields (only when queue_status === "DEAD_LETTER")
@@ -258,6 +274,8 @@ function buildSigningPayload(receipt: ReceiptFields): Record<string, unknown> {
     fields = BUDGET_WARNING_SIGNED_FIELDS;
   } else if (receipt.record_type === "reservation_expired") {
     fields = RESERVATION_EXPIRED_SIGNED_FIELDS;
+  } else if (receipt.record_type === "approval_receipt") {
+    fields = APPROVAL_RECEIPT_SIGNED_FIELDS;
   } else {
     // workflow_closed
     fields = WORKFLOW_CLOSED_SIGNED_FIELDS;
@@ -325,7 +343,7 @@ export async function signReceipt(
 
   if (signerOrKey instanceof Uint8Array) {
     sigBytes = await ed.signAsync(canonicalBytes, signerOrKey);
-    resolvedKeyId = keyId ?? "nonsudo-key-1";
+    resolvedKeyId = keyId ?? "varcore-default-key";
   } else {
     sigBytes = await signerOrKey.sign(canonicalBytes);
     resolvedKeyId = signerOrKey.keyId;
@@ -609,10 +627,21 @@ const DEFAULT_ACCEPTING_TSA_IDS = ["digicert", "sectigo", "globalsign"];
 export function loadTsaSidecar(tsaFilePath: string): TsaRecord[] {
   if (!fs.existsSync(tsaFilePath)) return [];
   const content = fs.readFileSync(tsaFilePath, "utf8");
-  return content
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => JSON.parse(line) as TsaRecord);
+  const records: TsaRecord[] = [];
+  for (const line of content.split("\n")) {
+    if (line.trim().length === 0) continue;
+    try {
+      records.push(JSON.parse(line) as TsaRecord);
+    } catch {
+      // Malformed NDJSON line (e.g. crash-truncated write) — skip and continue.
+      // A single bad line must not abort verification for the entire chain.
+      varcoreLog("warn", "varcore/receipts", "loadTsaSidecar: skipping malformed NDJSON line", {
+        file: tsaFilePath,
+        line_preview: line.slice(0, 120),
+      });
+    }
+  }
+  return records;
 }
 
 /**

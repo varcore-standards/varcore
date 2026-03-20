@@ -33,7 +33,7 @@ const { buildRfc3161Token } = testUtils;
 
 const KEY_ID = 'ns-test-01';
 const ZERO_HASH = 'sha256:' + '0'.repeat(64);
-const OUT_PATH = join(__dirname, '../deploy/schema-server/public/var/v1/test-vectors.json');
+const OUT_PATH = join(__dirname, '../schema-server/public/var/v1/test-vectors.json');
 const SEED_HEX = 'dead'.repeat(16);
 const PRIVATE_KEY = new Uint8Array(Buffer.from(SEED_HEX, 'hex'));
 

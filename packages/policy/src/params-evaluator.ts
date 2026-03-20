@@ -13,8 +13,10 @@
  */
 
 import type { ParamsBlock, ParamsCondition } from "./types";
+import { varcoreLog } from "@varcore/core";
 
 const MAX_DEPTH = 5;
+const PKG = "varcore/policy";
 
 export type ConditionResult = "match" | "no_match" | "type_error";
 
@@ -31,9 +33,10 @@ function getField(
 ): { found: true; value: unknown } | { found: false; arrayDeadEnd?: boolean } {
   const parts = fieldPath.split(".");
   if (parts.length > MAX_DEPTH) {
-    process.stderr.write(
-      `[nonsudo/policy] params: field path exceeds max depth (${MAX_DEPTH}): ${fieldPath}\n`
-    );
+    varcoreLog("warn", PKG, "params: field path exceeds max depth", {
+      max_depth: MAX_DEPTH,
+      field: fieldPath,
+    });
     return { found: false };
   }
 
@@ -42,10 +45,9 @@ function getField(
     if (Array.isArray(current)) {
       // Traversing into an array with a non-index key is a dead-end that would
       // silently bypass the condition. Signal type_error to the caller.
-      process.stderr.write(
-        `[nonsudo/policy] params: array traversal dead-end at '${fieldPath}' — ` +
-        `intermediate node is an array; condition cannot be evaluated\n`
-      );
+      varcoreLog("warn", PKG, "params: array traversal dead-end — condition cannot be evaluated", {
+        field: fieldPath,
+      });
       return { found: false, arrayDeadEnd: true };
     }
     if (current === null || current === undefined || typeof current !== "object") {
@@ -97,60 +99,55 @@ function evaluateCondition(
 
     case "gt":
       if (typeof fieldValue !== "number") {
-        process.stderr.write(
-          `[nonsudo/policy] params: gt requires a number field, got ${typeof fieldValue} for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: gt requires a number field", {
+          field,
+          actual_type: typeof fieldValue,
+        });
         return "type_error";
       }
       if (typeof value !== "number") {
-        process.stderr.write(
-          `[nonsudo/policy] params: gt requires a number value for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: gt requires a number value", { field });
         return "type_error";
       }
       return fieldValue > value ? "match" : "no_match";
 
     case "gte":
       if (typeof fieldValue !== "number" || typeof value !== "number") {
-        process.stderr.write(
-          `[nonsudo/policy] params: gte requires number operands for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: gte requires number operands", { field });
         return "type_error";
       }
       return fieldValue >= value ? "match" : "no_match";
 
     case "lt":
       if (typeof fieldValue !== "number" || typeof value !== "number") {
-        process.stderr.write(
-          `[nonsudo/policy] params: lt requires number operands for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: lt requires number operands", { field });
         return "type_error";
       }
       return fieldValue < value ? "match" : "no_match";
 
     case "lte":
       if (typeof fieldValue !== "number" || typeof value !== "number") {
-        process.stderr.write(
-          `[nonsudo/policy] params: lte requires number operands for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: lte requires number operands", { field });
         return "type_error";
       }
       return fieldValue <= value ? "match" : "no_match";
 
     case "match": {
       if (typeof fieldValue !== "string") {
-        process.stderr.write(
-          `[nonsudo/policy] params: match requires a string field, got ${typeof fieldValue} for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: match requires a string field", {
+          field,
+          actual_type: typeof fieldValue,
+        });
         return "type_error";
       }
       let pattern: RegExp;
       try {
         pattern = new RegExp(String(value));
       } catch {
-        process.stderr.write(
-          `[nonsudo/policy] params: invalid regex '${String(value)}' for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: invalid regex for match operator", {
+          field,
+          regex: String(value),
+        });
         return "no_match";
       }
       return pattern.test(fieldValue) ? "match" : "no_match";
@@ -158,18 +155,20 @@ function evaluateCondition(
 
     case "not_match": {
       if (typeof fieldValue !== "string") {
-        process.stderr.write(
-          `[nonsudo/policy] params: not_match requires a string field, got ${typeof fieldValue} for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: not_match requires a string field", {
+          field,
+          actual_type: typeof fieldValue,
+        });
         return "type_error";
       }
       let pattern: RegExp;
       try {
         pattern = new RegExp(String(value));
       } catch {
-        process.stderr.write(
-          `[nonsudo/policy] params: invalid regex '${String(value)}' for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: invalid regex for not_match operator", {
+          field,
+          regex: String(value),
+        });
         return "no_match";
       }
       return !pattern.test(fieldValue) ? "match" : "no_match";
@@ -177,27 +176,21 @@ function evaluateCondition(
 
     case "in":
       if (!Array.isArray(value)) {
-        process.stderr.write(
-          `[nonsudo/policy] params: in operator requires an array value for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: in operator requires an array value", { field });
         return "no_match";
       }
       return (value as unknown[]).includes(fieldValue) ? "match" : "no_match";
 
     case "not_in":
       if (!Array.isArray(value)) {
-        process.stderr.write(
-          `[nonsudo/policy] params: not_in operator requires an array value for '${field}'\n`
-        );
+        varcoreLog("warn", PKG, "params: not_in operator requires an array value", { field });
         return "no_match";
       }
       return !(value as unknown[]).includes(fieldValue) ? "match" : "no_match";
 
     default: {
       const exhaustive: never = op;
-      process.stderr.write(
-        `[nonsudo/policy] params: unknown operator '${String(exhaustive)}'\n`
-      );
+      varcoreLog("warn", PKG, "params: unknown operator", { operator: String(exhaustive) });
       return "no_match";
     }
   }
@@ -230,9 +223,9 @@ export function evaluateParams(
       // result === "match" — continue to next condition (AND logic)
     } catch {
       // Safety net — evaluateCondition should not throw but if it does, log and fail closed
-      process.stderr.write(
-        `[nonsudo/policy] params: unexpected error evaluating condition ${JSON.stringify(condition)}\n`
-      );
+      varcoreLog("error", PKG, "params: unexpected error evaluating condition", {
+        condition: JSON.stringify(condition),
+      });
       return "type_error";
     }
   }

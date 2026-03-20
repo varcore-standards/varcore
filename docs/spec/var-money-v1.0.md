@@ -2,7 +2,7 @@
 
 **Status:** NORMATIVE — applies to deployments with `var_money_version: "1.0"`.
 **Extends:** VAR Core v1.0 (`docs/spec/var-core-v1.0.md`)
-**Canonical URL:** `schemas.nonsudo.dev/var-money/v1.0/spec.md`
+**Canonical URL:** `schemas.nonsudo.com/var-money/v1.0/spec.md`
 **Last updated:** 2026-03-02
 
 ---
@@ -54,7 +54,7 @@ case-insensitive and applies to the full tool name string.
 ```
 
 Taxonomy patterns are loaded at proxy startup from the canonical taxonomy manifest at
-`schemas.nonsudo.dev/var-money/v1.0/taxonomy.json`. Failure to load is handled per the
+`schemas.nonsudo.com/var-money/v1.0/taxonomy.json`. Failure to load is handled per the
 degraded mode table in VAR Core v1.0 §4.
 
 ### 2.2 Missing Tag Warning
@@ -281,4 +281,4 @@ conformance requirements AND:
 
 ---
 
-*VAR-Money v1.0 — NonSudo, Inc. — schemas.nonsudo.dev/var-money/v1.0/spec.md*
+*VAR-Money v1.0 — NonSudo, Inc. — schemas.nonsudo.com/var-money/v1.0/spec.md*

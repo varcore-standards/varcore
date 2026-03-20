@@ -55,7 +55,7 @@ key.  Resolution order:
 
 1. Permanent local cache: `~/.nonsudo/key-cache/<key_id>.jwk`
 2. Proxy-written local key: `~/.nonsudo/keys/<key_id>.jwk`
-3. Remote fetch: `https://schemas.nonsudo.dev/.well-known/keys/<key_id>.json`
+3. Remote fetch: `https://schemas.nonsudo.com/.well-known/keys/<key_id>.json`
    (cached on success in the permanent cache)
 
 The `key_id` is validated against the pattern `/^[a-zA-Z0-9_-]{1,64}$/` before any file

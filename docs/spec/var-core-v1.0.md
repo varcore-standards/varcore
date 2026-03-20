@@ -2,7 +2,7 @@
 
 **Status:** NORMATIVE — all conformant NonSudo deployments must satisfy this document.
 **Supersedes:** Individual sections of `docs/reference/contract.md` where this document is more specific.
-**Canonical URL:** `schemas.nonsudo.dev/var/v1.0/spec.md`
+**Canonical URL:** `schemas.nonsudo.com/var/v1.0/spec.md`
 **Last updated:** 2026-03-02
 
 ---
@@ -405,4 +405,4 @@ and the degraded-mode behaviors for money actions are not applicable to Crawl de
 
 ---
 
-*VAR Core v1.0 — NonSudo, Inc. — schemas.nonsudo.dev/var/v1.0/spec.md*
+*VAR Core v1.0 — NonSudo, Inc. — schemas.nonsudo.com/var/v1.0/spec.md*

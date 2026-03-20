@@ -3,7 +3,7 @@
  * generate-test-vectors.ts
  *
  * Generates 21 signed VAR v1 test vectors (TV-01 to TV-21) and writes them to
- * deploy/schema-server/public/var/v1/test-vectors.json.
+ * schema-server/public/var/v1/test-vectors.json.
  *
  * Key ID: ns-test-01 (deterministic from seed for reproducible CI)
  *
@@ -42,7 +42,7 @@ const KEY_ID = "ns-test-01";
 const ZERO_HASH = "sha256:" + "0".repeat(64);
 const OUT_PATH = path.join(
   __dirname,
-  "../deploy/schema-server/public/var/v1/test-vectors.json"
+  "../schema-server/public/var/v1/test-vectors.json"
 );
 
 // Deterministic private key from seed (for reproducible test vectors)

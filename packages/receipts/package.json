@@ -1,6 +1,6 @@
 {
   "name": "@varcore/receipts",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Verifiable Action Receipt (VAR) cryptographic foundation",
   "license": "Apache-2.0",
   "keywords": [
@@ -27,7 +27,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/varcore-standards/varcore",
+    "url": "git+https://github.com/varcore-standards/varcore.git",
     "directory": "packages/receipts"
   },
   "publishConfig": {
@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@noble/ed25519": "^2.2.3",
-    "@varcore/core": "file:../core",
+    "@varcore/core": "^1.2.0",
     "@peculiar/asn1-cms": "^2.6.0",
     "@peculiar/asn1-schema": "^2.6.0",
     "@peculiar/asn1-tsp": "^2.6.1",

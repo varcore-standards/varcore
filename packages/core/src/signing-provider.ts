@@ -14,14 +14,14 @@ export interface PublicKeyJwk {
 /**
  * SigningProvider — abstracts the Ed25519 signing operation.
  *
- * The software path (SoftwareSigningProvider in @nonsudo/proxy) holds the
- * raw private key in memory. An HSM path (HsmSigningProvider — closed-source,
+ * The software path holds the raw private key in memory (used by a runtime
+ * enforcement proxy). An HSM path (HsmSigningProvider — closed-source,
  * never published to npm) delegates to a hardware security module without ever
  * exposing the private key bytes to the process.
  *
  * Used by:
  *   - @varcore/receipts   signReceipt(receipt, provider)
- *   - @nonsudo/proxy      ProxyContext.signingProvider
+ *   - runtime proxy       ProxyContext.signingProvider
  */
 export interface SigningProvider {
   /**

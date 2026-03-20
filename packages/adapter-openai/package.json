@@ -1,6 +1,6 @@
 {
   "name": "@varcore/adapter-openai",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "license": "Apache-2.0",
   "description": "OpenAI function-calling adapter for the NonSudo agent action governance layer",
   "keywords": [
@@ -31,8 +31,8 @@
     "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
-    "@varcore/core": "file:../core",
-    "@varcore/receipts": "file:../receipts",
+    "@varcore/core": "^1.2.0",
+    "@varcore/receipts": "^1.2.0",
     "canonicalize": "^2.0.0",
     "ulid": "^2.3.0"
   },
@@ -52,7 +52,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/varcore-standards/varcore",
+    "url": "git+https://github.com/varcore-standards/varcore.git",
     "directory": "packages/adapter-openai"
   },
   "engines": {

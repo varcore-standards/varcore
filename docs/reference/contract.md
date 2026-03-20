@@ -2,7 +2,7 @@
 
 **Verifiable Action Receipt — Version 1.0**
 **Status:** LOCKED — field names frozen. Changes require version bump and PR against this file.  
-**Canonical URL:** `schemas.nonsudo.dev/var/v1/contract.md`  
+**Canonical URL:** `schemas.nonsudo.com/var/v1/contract.md`  
 **Last updated:** 2026-02-28  
 
 ---
@@ -136,7 +136,7 @@ Steps:
 
 **Critical:** Use RFC 8785 JCS canonicalization, not `JSON.stringify`. These produce different byte sequences. `JSON.stringify` key order is implementation-defined; JCS key order is lexicographic by Unicode code point. An implementation that uses `JSON.stringify` will produce signatures that fail verification on a different platform.
 
-To validate your JCS implementation before building: test against the vectors in `schemas.nonsudo.dev/var/v1/test-vectors.json` — each vector includes the expected `canonical_form` as hex-encoded bytes.
+To validate your JCS implementation before building: test against the vectors in `schemas.nonsudo.com/var/v1/test-vectors.json` — each vector includes the expected `canonical_form` as hex-encoded bytes.
 
 **Hash encoding:** All SHA-256 hash fields (`prev_receipt_hash`, `params_canonical_hash`, `policy_bundle_hash`, `capability_manifest_hash`, `response_hash`) use the format `sha256:<hex>` where `<hex>` is 64 lowercase hexadecimal characters. Example: `"sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`. A verifier MUST reject any hash value that does not match this format.
 
@@ -389,11 +389,11 @@ The following field names are frozen as of v0.1. Any implementation using the ol
 
 An implementation is conformant with VAR v1.0 if and only if:
 
-1. All receipts it generates pass L1 verification against the public key identified by `key_id` in the receipt's `signature` block. Keys are published as JWK (RFC 8037, OKP key type, crv: Ed25519) at `schemas.nonsudo.dev/.well-known/keys/<key_id>.json`. A verifier MUST fetch and cache the key before verifying; it MUST NOT hard-code key material.
+1. All receipts it generates pass L1 verification against the public key identified by `key_id` in the receipt's `signature` block. Keys are published as JWK (RFC 8037, OKP key type, crv: Ed25519) at `schemas.nonsudo.com/.well-known/keys/<key_id>.json`. A verifier MUST fetch and cache the key before verifying; it MUST NOT hard-code key material.
 2. All receipts it generates pass L2 verification (chain intact, no sequence gaps)
 3. All field names match Section 3 exactly (no aliases, no additions without version bump)
 4. JCS (RFC 8785) is used for signing payload canonicalization, not `JSON.stringify`
-5. All test vectors in `schemas.nonsudo.dev/var/v1/test-vectors.json` produce the expected verification results
+5. All test vectors in `schemas.nonsudo.com/var/v1/test-vectors.json` produce the expected verification results
 
 ---
 
@@ -406,4 +406,4 @@ An implementation is conformant with VAR v1.0 if and only if:
 
 ---
 
-*VAR v1.0 Public Contract — NonSudo, Inc. — schemas.nonsudo.dev*
+*VAR v1.0 Public Contract — NonSudo, Inc. — schemas.nonsudo.com*

@@ -108,7 +108,16 @@ export default {
           "spec_version": { "type": "string", "const": "var/1.0" },
           "record_type": {
             "type": "string",
-            "enum": ["workflow_manifest", "action_receipt", "workflow_closed"]
+            "enum": [
+              "workflow_manifest",
+              "action_receipt",
+              "workflow_closed",
+              "post_receipt",
+              "approval_receipt",
+              "recovery_event",
+              "budget_warning",
+              "reservation_expired"
+            ]
           },
           "signature": {
             "type": "object",

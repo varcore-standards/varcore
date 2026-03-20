@@ -27,7 +27,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/varcore-standards/varcore",
+    "url": "git+https://github.com/varcore-standards/varcore.git",
     "directory": "packages/store"
   },
   "publishConfig": {

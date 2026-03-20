@@ -366,3 +366,89 @@ describe("8. Hash encoding", () => {
     expect(jcsOutput).not.toBe(jsonOutput);
   });
 });
+
+// ── BUG-6 regression tests: approval_receipt signing + pending_approval_id ───
+
+describe("BUG-6: approval_receipt signing and pending_approval_id", () => {
+  test("approval_receipt sign+verify round-trip succeeds with approval-specific fields", async () => {
+    const privKey = ed.utils.randomPrivateKey();
+    const pubKey = await ed.getPublicKeyAsync(privKey);
+
+    const fields: ReceiptFields = {
+      receipt_id: "01HXYZ000000000000000010",
+      record_type: "approval_receipt",
+      spec_version: "var/1.0",
+      workflow_id: "01HXYZ000000000000000000",
+      workflow_id_source: "nonsudo_generated",
+      agent_id: "agent-abc123",
+      issued_at: "2026-02-28T10:00:05Z",
+      prev_receipt_hash: "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      sequence_number: 3,
+      policy_bundle_hash: "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      rfc3161_token: null,
+      tsa_id: null,
+      action_receipt_id: "01HXYZ000000000000000002",
+      approval_receipt_id: "01HXYZ000000000000000010",
+      tool_name: "stripe.charge",
+      approval_outcome: "APPROVED",
+      approver: "ops-admin@example.com",
+      approval_dir: "/tmp/approvals",
+      wait_duration_ms: 12345,
+    } as ReceiptFields;
+
+    const unsigned = createReceipt(fields);
+    const signed = await signReceipt(unsigned, privKey, "test-key");
+    const result = await verifySignature(signed, pubKey);
+
+    expect(result.valid).toBe(true);
+
+    // Tamper with approval_outcome — signature must now fail
+    const tampered = { ...signed, approval_outcome: "DENIED" };
+    const tamperedResult = await verifySignature(tampered as SignedReceipt, pubKey);
+    expect(tamperedResult.valid).toBe(false);
+  });
+
+  test("pending_approval_id on action_receipt is signed — tampering invalidates signature", async () => {
+    const privKey = ed.utils.randomPrivateKey();
+    const pubKey = await ed.getPublicKeyAsync(privKey);
+
+    const fields = makeActionFields({
+      pending_approval_id: "01HXYZ000000000000000099",
+    });
+
+    const unsigned = createReceipt(fields);
+    const signed = await signReceipt(unsigned, privKey, "test-key");
+
+    // Verify original is valid
+    const result = await verifySignature(signed, pubKey);
+    expect(result.valid).toBe(true);
+
+    // Tamper with pending_approval_id — signature must fail
+    const tampered = { ...signed, pending_approval_id: "01HXYZ_TAMPERED_VALUE_000" };
+    const tamperedResult = await verifySignature(tampered as SignedReceipt, pubKey);
+    expect(tamperedResult.valid).toBe(false);
+  });
+});
+
+// ── BUG-4 regression tests: computeContentEntropyHash ────────────────────────
+
+import { computeContentEntropyHash } from "@varcore/core";
+
+describe("BUG-4: computeContentEntropyHash deterministic hashing", () => {
+  test("same JSON object regardless of key order produces same hash", () => {
+    const a = computeContentEntropyHash('{"b":1,"a":2}');
+    const b = computeContentEntropyHash('{"a":2,"b":1}');
+    expect(a).toBe(b);
+  });
+
+  test("non-JSON string produces a valid sha256 hash", () => {
+    const result = computeContentEntropyHash("hello world");
+    expect(result).toMatch(/^sha256:[0-9a-f]{64}$/);
+  });
+
+  test("JSON primitive does not parse as object — string and number hash differently", () => {
+    const asNum = computeContentEntropyHash("42");
+    const asStr = computeContentEntropyHash('"42"');
+    expect(asNum).not.toBe(asStr);
+  });
+});

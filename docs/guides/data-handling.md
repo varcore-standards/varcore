@@ -120,7 +120,7 @@ made by the proxy are:
 
 1. Forwarding ALLOW'd tool calls to the configured `upstream_url`
 2. RFC 3161 timestamping requests to the configured TSA (if enabled)
-3. Public key resolution from `schemas.nonsudo.dev` (verify/conform, not proxy)
+3. Public key resolution from `schemas.nonsudo.com` (verify/conform, not proxy)
 
 ---
 

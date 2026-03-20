@@ -49,7 +49,7 @@ so old and new keys coexist in the key store.
    written after restart carry the new `key_id`.
 
 4. **Publish the new public JWK** if verifiers resolve keys remotely via
-   `schemas.nonsudo.dev`.  Deploy the new `.jwk` file to the schema server under
+   `schemas.nonsudo.com`.  Deploy the new `.jwk` file to the schema server under
    `/.well-known/keys/<new_key_id>.json`.
 
 5. **Archive the old private key** (do not delete it yet).  You may need it to
@@ -96,7 +96,7 @@ resolved in this order:
 
 1. **Permanent local cache** — `~/.nonsudo/key-cache/<key_id>.jwk`
 2. **Proxy-written local key** — `~/.nonsudo/keys/<key_id>.jwk`
-3. **Remote fetch** — `https://schemas.nonsudo.dev/.well-known/keys/<key_id>.json`
+3. **Remote fetch** — `https://schemas.nonsudo.com/.well-known/keys/<key_id>.json`
    (cached on success in the permanent cache; `--offline` skips this step)
 
 **Path-traversal protection:** The `key_id` is validated against

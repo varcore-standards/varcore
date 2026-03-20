@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://schemas.nonsudo.dev/var/v1.0/policy-schema.json",
+  "$id": "https://schemas.nonsudo.com/var/v1.0/policy-schema.json",
   "title": "NonSudo Policy Bundle",
   "description": "JSON Schema for nonsudo.yaml policy bundles. Every field introduced across all NonSudo sessions is represented here. Policy YAML is parsed and validated against this schema at proxy startup.",
   "type": "object",

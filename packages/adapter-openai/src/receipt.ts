@@ -6,9 +6,8 @@
  * failureReason is provided.
  */
 
-import * as crypto from "crypto";
 import { ulid } from "ulid";
-import canonicalize from "canonicalize";
+import { canonicalHash } from "@varcore/core";
 import { createReceipt, signReceipt, chainReceipt } from "@varcore/receipts";
 import type {
   SignedReceipt,
@@ -17,12 +16,6 @@ import type {
   BlastRadius,
   FallbackPolicy,
 } from "@varcore/receipts";
-
-function paramsCanonicalHash(params: unknown): string {
-  const canonical = canonicalize(params as object) ?? "null";
-  const hex = crypto.createHash("sha256").update(canonical).digest("hex");
-  return "sha256:" + hex;
-}
 
 function nowRfc3339(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -86,7 +79,7 @@ export async function createActionReceipt(
     rfc3161_token: null as string | null,
     tsa_id: null as string | null,
     tool_name: toolName,
-    params_canonical_hash: paramsCanonicalHash(args),
+    params_canonical_hash: canonicalHash(args),
     decision,
     decision_reason: decisionReason,
     decision_order: 1,
