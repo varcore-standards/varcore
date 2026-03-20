@@ -81,7 +81,7 @@ Run mode (v1.1) closes the first three paths via secretless execution, workload 
 
 **Temperature-zero entropy prediction.** Described in Section 2. Mitigated by timing coherence.
 
-**JTI replay protection.** Resolved March 2026 via `approval-replay-guard.ts` — approval receipts deduplicated against a persistent consumed-approvals store.
+**JTI replay protection.** Resolved March 2026 — approval receipts are deduplicated against a persistent consumed-approvals store via `approval-replay-guard.ts` in the nonsudo reference platform. Third-party VAR-Core implementations must implement equivalent JTI deduplication independently.
 
 ---
 
@@ -91,5 +91,5 @@ A verifier SHALL verify any receipt without contacting NonSudo.
 
 - **Public key:** proxy `/health` endpoint or `schemas.nonsudo.com/.well-known/keys/<key_id>.json`.
 - **Timestamp:** RFC 3161 tokens from external TSAs, verifiable against TSA public infrastructure independently.
-- **Chain verification:** `pip install nonsudo-verify` — language-agnostic L1-L4, entirely offline.
+- **Chain verification:** clone this repo and run `cd python-verifier && pip install -e .` — language-agnostic L1–L4 verification, entirely offline.
 - **Conformance vectors:** 21 test vectors at `schemas.nonsudo.com/var/v1/test-vectors.json`.
