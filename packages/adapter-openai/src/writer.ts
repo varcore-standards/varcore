@@ -1,3 +1,4 @@
+// TODO: unused module — pending refactor to shared utility
 /**
  * Simple NDJSON receipt writer for the OpenAI adapter.
  * Duplicates the pattern from packages/proxy/src/writer.ts.

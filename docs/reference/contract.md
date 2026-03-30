@@ -234,8 +234,9 @@ Verification is graduated. An auditor can verify at any level their use case req
 | **L1** | Signature Valid | Ed25519 signature over signing payload (Section 5) verifies against the public key identified by `key_id`. | 0 |
 | **L2** | Chain Intact | `prev_receipt_hash` values form an unbroken hash chain back to `workflow_manifest`. `sequence_number` increments by 1 with no gaps. Gap → `INCOMPLETE_CHAIN` error. | 0 |
 | **L3** | Externally Timestamped | `rfc3161_token` is a valid RFC 3161 timestamp token from a trusted TSA. If `rfc3161_token` is null: `L3: SKIPPED — receipt generated before Phase 1 timestamping; not a chain integrity failure`. | 1 |
-| **L4** | Merkle Checkpoint | Receipt hash appears in a published Merkle tree checkpoint. (Reserved — not implemented in v0.1.) | future |
-| **L5** | Policy Provenance | `policy_bundle_hash` matches a policy bundle in the verifier's known-good archive. (Reserved — not implemented in v0.1.) | future |
+| **L4** | Outcome Binding | Structural invariants for money-action receipts: every ALLOW'd money action has a terminal post-receipt, no duplicate idempotency keys, budget anomalies flagged. Returns N/A when no money actions are present. | 0 |
+| **L5** | Merkle Checkpoint | Receipt hash appears in a published Merkle tree checkpoint. (Reserved — not implemented in v0.1.) | future |
+| **L6** | Policy Provenance | `policy_bundle_hash` matches a policy bundle in the verifier's known-good archive. (Reserved — not implemented in v0.1.) | future |
 
 **Phase 0 ships L1 + L2.**  
 **Phase 1 Day 1 adds L3.**

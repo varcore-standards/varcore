@@ -33,7 +33,6 @@
   "dependencies": {
     "@varcore/core": "^1.2.0",
     "@varcore/receipts": "^1.2.0",
-    "canonicalize": "^2.0.0",
     "ulid": "^2.3.0"
   },
   "peerDependencies": {
