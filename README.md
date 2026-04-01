@@ -155,12 +155,13 @@ const genesis = createReceipt({
   declared_tools:     ["stripe_refund", "stripe_charge"],
 });
 const signed1 = await signReceipt(genesis, privKey, "my-key-1");
-// signed1.var_id    → "var_01..."
-// signed1.signature → "ed25519:..."
+// signed1.receipt_id → "01J5Q7XP8R2NKWZ9T4MVCLB3Y"
+// signed1.signature  → { alg: "Ed25519", key_id: "my-key-1", sig: "<base64url>" }
 
 // Create and chain the action receipt
 const action = chainReceipt(
   createReceipt({
+    receipt_id:         "01J5Q7XP8R2NKWZ9T4MVCLB3Y",
     record_type:        "action_receipt",
     spec_version:       "var/1.0",
     workflow_id:        "wf_01J5Q7XP8R",
@@ -173,10 +174,17 @@ const action = chainReceipt(
     rfc3161_token:      null,
     tsa_id:             null,
     tool_name:          "stripe_refund",
+    params_canonical_hash: "sha256:def456...",
     decision:           result.decision,
-    reason:             result.reason,
+    decision_reason:    result.decision_reason ?? "policy threshold exceeded",
+    decision_order:     1,
+    queue_status:       "COMPLETED",
+    queue_timeout_ms:   5000,
+    state_version_before: 0,
+    state_version_after:  1,
     blast_radius:       "MED",
     reversible:         false,
+    response_hash:      null,
   }),
   signed1  // links prev_receipt_hash + increments sequence
 );

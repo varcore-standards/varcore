@@ -7,7 +7,8 @@
     "packages/policy",
     "packages/store",
     "packages/adapter-openai",
-    "packages/adapter-langchain"
+    "packages/adapter-langchain",
+    "packages/nonsudo"
   ],
   "engines": {
     "node": ">=20.0.0"

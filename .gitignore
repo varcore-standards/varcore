@@ -13,6 +13,7 @@ dist/
 .DS_Store
 .wrangler/
 *.js.map
+*.tgz
 
 # Internal Claude Code session files — never commit
 CLAUDE.md

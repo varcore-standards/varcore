@@ -1,0 +1,43 @@
+{
+  "name": "nonsudo",
+  "version": "1.2.1",
+  "description": "NonSudo — mandate enforcement and cryptographic receipts for AI agents",
+  "keywords": [
+    "ai-agents",
+    "governance",
+    "policy",
+    "receipts",
+    "security",
+    "fintech"
+  ],
+  "homepage": "https://nonsudo.com",
+  "bugs": {
+    "url": "https://github.com/nonsudo/varcore/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nonsudo/varcore.git",
+    "directory": "packages/nonsudo"
+  },
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "bin": {
+    "nonsudo": "bin/nonsudo.js"
+  },
+  "files": [
+    "index.js",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@varcore/core": "^1.2.1",
+    "@varcore/receipts": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
