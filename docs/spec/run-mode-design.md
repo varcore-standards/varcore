@@ -1,34 +1,34 @@
-# Run Mode — Threat Model and Deployment Requirements
+# Attest Mode — Threat Model and Deployment Requirements
 
-**Status:** DESIGN — targets VAR Core v1.0, Run mode in v1.1  
-**Audience:** SREs and platform engineers evaluating whether to deploy NonSudo in Run mode.
+**Status:** DESIGN — targets VAR Core v1.0, Attest mode in v1.1
+**Audience:** SREs and platform engineers evaluating whether to deploy NonSudo in Attest mode.
 
 ---
 
 ## 1. Purpose and Non‑Goals
 
-Run mode is the highest-assurance deployment of NonSudo. It is designed so that:
+Attest mode is the highest-assurance deployment of NonSudo. It is designed so that:
 
 - **Every tool call from the AI agent to protected upstreams is mediated by NonSudo.**
 - **Bypassing NonSudo requires defeating workload identity or egress controls, not just misconfiguring an API key.**
-- **Verification remains offline and self-contained** (VAR Core v1.0) — Run mode changes *how* receipts are produced, not *how* they are verified.
+- **Verification remains offline and self-contained** (VAR Core v1.0) — Attest mode changes *how* receipts are produced, not *how* they are verified.
 
 This document focuses on:
 
-- **Bypass paths in Walk mode** that Run mode is meant to close.
+- **Bypass paths in Enforce mode** that Attest mode is meant to close.
 - **Requirements for non-bypassable enforcement** (secretless execution, workload identity, constrained egress).
-- **The minimum viable Run implementation path** for v1.1.
-- **Explicit out-of-scope items** for v1.1 (what Run will *not* guarantee).
+- **The minimum viable Attest implementation path** for v1.1.
+- **Explicit out-of-scope items** for v1.1 (what Attest will *not* guarantee).
 
-Run mode is an *operator-facing* construct: an SRE should be able to read this document and answer, “If we satisfy these constraints, what attacks still work and which ones do not?”
+Attest mode is an *operator-facing* construct: an SRE should be able to read this document and answer, “If we satisfy these constraints, what attacks still work and which ones do not?”
 
 ---
 
-## 2. Bypass Paths in Walk Mode
+## 2. Bypass Paths in Enforce Mode
 
-Walk mode is the v1.0 production mode. It provides strong evidence (signed pre-/post-receipts, budgets, VAR-Money semantics) but is **bypassable** if the AI agent or its hosting environment is misconfigured.
+Enforce mode is the v1.0 production mode. It provides strong evidence (signed pre-/post-receipts, budgets, VAR-Money semantics) but is **bypassable** if the AI agent or its hosting environment is misconfigured.
 
-This section enumerates the main bypass paths that SREs should assume remain possible in Walk mode.
+This section enumerates the main bypass paths that SREs should assume remain possible in Enforce mode.
 
 ### 2.1 Direct Credential Bypass
 
@@ -74,13 +74,13 @@ This section enumerates the main bypass paths that SREs should assume remain pos
   - “Open a terminal and run this shell script.”
 - Consequences:
   - NonSudo receipts accurately record what the agent *asked*, but the high-risk action may occur through human backchannels.
-  - This is primarily a **governance and UX** problem; Run mode cannot fully close it.
+  - This is primarily a **governance and UX** problem; Attest mode cannot fully close it.
 
 ### 2.5 Observability-Only Configurations
 
 **Description:** Policy or runtime configuration intentionally or accidentally sets:
 
-- `mode: crawl` or `enforcement: false`, or
+- `mode: observe` or `enforcement: false`, or
 - Rules that ALLOW with no money-action tagging even for high-risk tools.
 
 Consequences:
@@ -90,14 +90,14 @@ Consequences:
 
 ---
 
-## 3. Requirements for Non‑Bypassable Enforcement (Run Mode)
+## 3. Requirements for Non‑Bypassable Enforcement (Attest Mode)
 
-Run mode’s goal is **non-bypassable enforcement for protected upstreams**: if an upstream action is executed, either:
+Attest mode’s goal is **non-bypassable enforcement for protected upstreams**: if an upstream action is executed, either:
 
 - There is a corresponding NonSudo receipt chain that passes L1–L4, **or**
 - The upstream access was obtained by breaking the surrounding identity or network controls (i.e., outside the assumed threat model).
 
-To achieve this, Run mode adds three hard requirements on top of Walk:
+To achieve this, Attest mode adds three hard requirements on top of Enforce:
 
 - **Secretless execution** — no long-lived secrets in the agent.
 - **Workload identity** — upstreams accept identity-bound tokens only, not raw secrets.
@@ -145,8 +145,8 @@ SRE enforcement checklist:
     - A service account token minted per proxy identity.
   - The upstream MUST authorize requests based on the proxy’s identity, not on a re-usable raw secret.
 - **Receipts:**
-  - Run-mode manifests MUST record:
-    - `deployment_mode: run`
+  - Attest-mode manifests MUST record:
+    - `deployment_mode: attest`
     - `agent_workload_id`
     - `proxy_workload_id`
   - These fields MUST be signed and verifiable under L1/L2.
@@ -184,7 +184,7 @@ SRE enforcement checklist:
 
 ### 3.4 Operational Requirements and SLOs
 
-Run mode adds **operational blast radius**: if the proxy is down, money-moving actions cannot proceed.
+Attest mode adds **operational blast radius**: if the proxy is down, money-moving actions cannot proceed.
 
 Operators SHOULD:
 
@@ -193,20 +193,20 @@ Operators SHOULD:
   - Enforcement remains strict for money actions (FAIL CLOSED where required by VAR Core).
   - Non-money or read-only actions may still proceed with explicit degraded receipts.
 - Ensure that on-call engineers can:
-  - Identify whether a workflow is in Crawl, Walk, or Run from receipts alone.
-  - Explain to auditors what Run mode guarantees that Walk mode does not.
+  - Identify whether a workflow is in Observe, Enforce, or Attest from receipts alone.
+  - Explain to auditors what Attest mode guarantees that Enforce mode does not.
 
 ---
 
-## 4. Minimum Viable Run Implementation Path (v1.1)
+## 4. Minimum Viable Attest Implementation Path (v1.1)
 
-This section describes a **minimal, ship-ready** Run mode for v1.1. It is intentionally conservative: the requirements are the smallest set that meaningfully raise assurance above Walk mode while remaining feasible for most cloud-native SRE teams.
+This section describes a **minimal, ship-ready** Attest mode for v1.1. It is intentionally conservative: the requirements are the smallest set that meaningfully raise assurance above Enforce mode while remaining feasible for most cloud-native SRE teams.
 
-### 4.1 Phase 0 — Pre‑Reqs (Walk Mode Baseline)
+### 4.1 Phase 0 — Pre‑Reqs (Enforce Mode Baseline)
 
-Before enabling Run mode, the deployment MUST:
+Before enabling Attest mode, the deployment MUST:
 
-- Operate successfully in **Walk mode** in production with:
+- Operate successfully in **Enforce mode** in production with:
   - VAR Core v1.0 conformance.
   - VAR-Money v1.0 enabled for money actions.
   - Receipt chains routinely verified offline in CI or a periodic job.
@@ -236,7 +236,7 @@ Minimal steps:
 
 Exit criteria:
 
-- Killing workload identity for the proxy breaks all money actions, even in Walk mode.
+- Killing workload identity for the proxy breaks all money actions, even in Enforce mode.
 - Killing workload identity for the agent only prevents it from talking to NonSudo, not directly to upstreams (which were never permitted).
 
 ### 4.3 Phase 2 — Egress Lockdown
@@ -261,44 +261,44 @@ Exit criteria:
 
 - It is operationally *easier* to update NonSudo policy than to create a network bypass.
 
-### 4.4 Phase 3 — Run Mode Flag and Receipts
+### 4.4 Phase 3 — Attest Mode Flag and Receipts
 
 Goals:
 
-- Enable `mode: run` in policy and surface it in receipts.
+- Enable `mode: attest` in policy and surface it in receipts.
 
 Minimal steps:
 
-- Add `mode: run` to `nonsudo.yaml` for selected workflows.
+- Add `mode: attest` to `nonsudo.yaml` for selected workflows.
 - Ensure the proxy:
   - Fails closed for money and read-write actions per VAR Core RI-9.
-  - Emits manifests with `deployment_mode: run`, `agent_workload_id`, and `proxy_workload_id`.
+  - Emits manifests with `deployment_mode: attest`, `agent_workload_id`, and `proxy_workload_id`.
 - Extend operational dashboards and reports to:
-  - Distinguish Crawl, Walk, Run workflows.
-  - Alert if a Run workflow’s receipts show degraded behavior (e.g., repeated `RECOVERY_INCOMPLETE`).
+  - Distinguish Observe, Enforce, Attest workflows.
+  - Alert if an Attest workflow’s receipts show degraded behavior (e.g., repeated `RECOVERY_INCOMPLETE`).
 
 Exit criteria:
 
-- At least one production workflow runs in `mode: run` with:
+- At least one production workflow runs in `mode: attest` with:
   - Verified offline L1–L4 chains.
   - Clear evidence that direct upstream access from agent pods is blocked.
 
 ---
 
-## 5. Explicit Out‑of‑Scope Items for Run v1.1
+## 5. Explicit Out‑of‑Scope Items for Attest v1.1
 
-Run mode v1.1 is intentionally scoped. The following are **out of scope** and MUST NOT be inferred from “Run mode” in receipts or documentation:
+Attest mode v1.1 is intentionally scoped. The following are **out of scope** and MUST NOT be inferred from “Attest mode” in receipts or documentation:
 
 ### 5.1 Model and Prompt Integrity
 
-- Run mode **does not** guarantee:
+- Attest mode **does not** guarantee:
   - That the model weights have not been tampered with.
   - That prompts are free of injection or manipulation.
 - It records what the agent attempted to do and enforces policy on tool calls; it does not certify the *correctness* of those attempts.
 
 ### 5.2 Human and Backchannel Behavior
 
-- Run mode **does not**:
+- Attest mode **does not**:
   - Prevent humans from performing out-of-band actions (e.g., clicking UI buttons).
   - Capture actions taken in third-party dashboards, shells, or consoles.
 - It may record that the agent *asked* for human help, but not what the human ultimately did.
@@ -319,7 +319,7 @@ Run mode v1.1 is intentionally scoped. The following are **out of scope** and MU
 
 ### 5.5 Full Formal Verification and Static Non‑Interference Proofs
 
-- Run mode v1.1 does not ship:
+- Attest mode v1.1 does not ship:
   - A formal proof that all code paths obey the policy.
   - A static guarantee that no data can flow from agent to upstream outside the proxy.
 - Instead, it relies on:
@@ -328,16 +328,16 @@ Run mode v1.1 is intentionally scoped. The following are **out of scope** and MU
 
 ### 5.6 Automatic Rollback or Self‑Healing
 
-- Run mode does not:
+- Attest mode does not:
   - Automatically roll back policy changes that degrade availability.
   - Self-heal misconfigured egress or identity.
 - Those behaviors belong to higher-level orchestration and release-management systems.
 
 ---
 
-## 6. What SREs Should Decide Before Enabling Run Mode
+## 6. What SREs Should Decide Before Enabling Attest Mode
 
-Before setting `mode: run` in production, SREs SHOULD:
+Before setting `mode: attest` in production, SREs SHOULD:
 
 - Decide which upstreams are **in-scope for non-bypassable enforcement** and confirm:
   - Agent workloads lack direct credentials to those upstreams.
@@ -345,10 +345,10 @@ Before setting `mode: run` in production, SREs SHOULD:
   - Egress policies for agent workloads enforce “proxy-only” routing.
 - Define:
   - Availability SLOs and error budgets for the proxy.
-  - Escalation paths when Run-mode invariants (e.g., budget enforcement, post-receipts) are violated.
+  - Escalation paths when Attest-mode invariants (e.g., budget enforcement, post-receipts) are violated.
 - Document:
   - Which controls are enforced by NonSudo vs. surrounding infrastructure.
-  - What auditors and internal reviewers should (and should not) infer from seeing `mode: run` in a manifest.
+  - What auditors and internal reviewers should (and should not) infer from seeing `mode: attest` in a manifest.
 
-If these decisions and controls are not yet in place, NonSudo SHOULD remain in Walk mode until they are.
+If these decisions and controls are not yet in place, NonSudo SHOULD remain in Enforce mode until they are.
 

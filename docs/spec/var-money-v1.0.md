@@ -20,8 +20,8 @@ Policy bundles that set `var_money_version: "1.0"` MUST conform to this document
 to VAR Core v1.0. A deployment that sets `var_money_version` but not `var_core_version`
 is non-conformant.
 
-**Mode applicability:** VAR-Money v1.0 is applicable to Walk and Run mode deployments.
-Crawl mode deployments MUST NOT set `var_money_version`; money action semantics are
+**Mode applicability:** VAR-Money v1.0 is applicable to Enforce and Attest mode deployments.
+Observe mode deployments MUST NOT set `var_money_version`; money action semantics are
 undefined in observe-only mode.
 
 ---
@@ -249,7 +249,7 @@ and `billable: true` is present in the receipt.
 | BLOCK (velocity_exceeded) on money action | Yes | VCB enforcement: circuit breaker triggered |
 | BLOCK (proxy_guard) on any action | No | Proxy guard: not policy enforcement |
 | BLOCK (declared_tools_unavailable) on any action | No | Degraded session: proxy cannot operate |
-| Crawl mode, any action | No | Observe-only: no enforcement |
+| Observe mode, any action | No | Observe-only: no enforcement |
 | Read-only tool calls | No | Not a money action |
 | Approval resolution events (post-STEP_UP) | No | Outcome only, billed on STEP_UP |
 

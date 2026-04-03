@@ -25,6 +25,25 @@ export { SCHEMA_PACKS, resolveSchemaPack } from "./schemas/index";
 
 import type { PolicyConfig, PolicyRule, EvaluationResult, EvaluationContext } from "./types";
 
+// ── Backward-compatible mode normalizer ──────────────────────────────────────
+
+type DeploymentMode = "observe" | "enforce" | "attest";
+
+const MODE_ALIASES: Record<string, DeploymentMode> = {
+  crawl: "observe",
+  walk: "enforce",
+  run: "attest",
+};
+
+function normalizeMode(raw: string): DeploymentMode {
+  if (raw in MODE_ALIASES) {
+    const normalized = MODE_ALIASES[raw as keyof typeof MODE_ALIASES];
+    console.warn(`[nonsudo] mode "${raw}" deprecated. Use "${normalized}".`);
+    return normalized;
+  }
+  return raw as DeploymentMode;
+}
+
 /**
  * Merge schema pack rules into the operator rule set.
  *
@@ -104,6 +123,12 @@ export function loadPolicy(yamlPath: string): PolicyConfig {
   }
 
   const raw = doc as Record<string, unknown>;
+
+  // Normalize deprecated mode values (crawl→observe, walk→enforce, run→attest)
+  if (typeof raw["mode"] === "string") {
+    raw["mode"] = normalizeMode(raw["mode"]);
+  }
+
   const policyBlock = raw["policy"];
 
   if (!policyBlock || typeof policyBlock !== "object") {

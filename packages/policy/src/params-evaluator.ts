@@ -174,6 +174,22 @@ function evaluateCondition(
       return !pattern.test(fieldValue) ? "match" : "no_match";
     }
 
+    case "gt_bigint": {
+      if (typeof fieldValue !== "string" || typeof value !== "string") {
+        varcoreLog("warn", PKG, "params: gt_bigint requires string operands", {
+          field,
+          actual_type: typeof fieldValue,
+        });
+        return "type_error";
+      }
+      try {
+        return BigInt(fieldValue) > BigInt(value) ? "match" : "no_match";
+      } catch {
+        varcoreLog("warn", PKG, "params: gt_bigint failed to parse BigInt", { field });
+        return "type_error";
+      }
+    }
+
     case "in":
       if (!Array.isArray(value)) {
         varcoreLog("warn", PKG, "params: in operator requires an array value", { field });

@@ -12,7 +12,8 @@ export interface ParamsCondition {
     | "in"
     | "not_in"
     | "exists"
-    | "not_exists";
+    | "not_exists"
+    | "gt_bigint";
   value?: unknown;
 }
 
@@ -36,7 +37,7 @@ export interface PolicyRule {
   merge_schema_params?: boolean;
   /**
    * VAR-Money v1.0: declares this tool call as a money action requiring budget
-   * enforcement and outcome binding (Walk/Run mode only).
+   * enforcement and outcome binding (Enforce/Attest mode only).
    */
   money_action?: boolean;
   /**

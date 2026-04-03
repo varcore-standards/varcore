@@ -6,7 +6,7 @@
 This document is the complete reference for all VAR v1.0 receipt types. The existing
 types (`workflow_manifest`, `action_receipt`, `workflow_closed`) are defined in
 `docs/reference/contract.md`. This document adds five new types introduced with
-VAR-Money v1.0 and the Walk/Run mode enforcement model.
+VAR-Money v1.0 and the Enforce/Attest mode enforcement model.
 
 For signing rules, canonicalization, and chain rules, see `docs/reference/contract.md §4–6`.
 
@@ -28,7 +28,7 @@ Emitted once per money action that produced `decision: ALLOW`. Records the termi
 outcome of the upstream tool call. The `post_receipt` is the second half of the
 outcome-binding pair; the first half is the `action_receipt` (pre-receipt).
 
-A `post_receipt` MUST be emitted for every ALLOW'd money action in Walk and Run modes
+A `post_receipt` MUST be emitted for every ALLOW'd money action in Enforce and Attest modes
 (RI-1 from `docs/spec/var-core-v1.0.md §3`). The proxy MUST emit the `post_receipt`
 regardless of whether the upstream call succeeded or failed.
 

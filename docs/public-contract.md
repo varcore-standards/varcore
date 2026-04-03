@@ -17,11 +17,11 @@ holding the public key — no dependency on NonSudo infrastructure required.
 
 | Mode | Identity | Bypassable | Post-receipts | Suitable For |
 |------|----------|-----------|---------------|--------------|
-| **Crawl** | Header-asserted | Yes | No | Observability, audit prototyping |
-| **Walk** | Header-asserted + session provenance | Yes, if agent holds credentials outside proxy | Yes, money actions | Production enforcement, compliance |
-| **Run** | Workload identity (OIDC/SPIFFE) | No | Yes, all actions | High-assurance, regulated |
+| **Observe** | Header-asserted | Yes | No | Observability, audit prototyping |
+| **Enforce** | Header-asserted + session provenance | Yes, if agent holds credentials outside proxy | Yes, money actions | Production enforcement, compliance |
+| **Attest** | Workload identity (OIDC/SPIFFE) | No | Yes, all actions | High-assurance, regulated |
 
-Run is v1.1. Walk is the production mode in v1.0.
+Attest is v1.1. Enforce is the production mode in v1.0.
 
 ---
 
@@ -40,8 +40,8 @@ Run is v1.1. Walk is the production mode in v1.0.
 
 - Does not read parameter content — only hashes it.
 - Does not detect prompt injection or semantic manipulation.
-- Does not guarantee non-bypass in Walk mode if the agent holds credentials outside the proxy.
-- Does not provide outcome binding in Crawl mode.
+- Does not guarantee non-bypass in Enforce mode if the agent holds credentials outside the proxy.
+- Does not provide outcome binding in Observe mode.
 
 ---
 

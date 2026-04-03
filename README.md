@@ -101,7 +101,7 @@ Try it: https://schemas.nonsudo.com
 ## Install
 
 ```bash
-npm install @varcore/receipts @varcore/policy
+npm install nonsudo
 ```
 
 `@noble/ed25519` is included as a dependency of
@@ -118,8 +118,8 @@ import {
   signReceipt,
   chainReceipt,
   verifyChain,
-} from "@varcore/receipts";
-import { loadPolicy, evaluatePolicy } from "@varcore/policy";
+} from "nonsudo";
+import { loadPolicy, evaluatePolicy } from "nonsudo/policy";
 
 // Generate an Ed25519 key pair
 const privKey = ed.utils.randomPrivateKey();

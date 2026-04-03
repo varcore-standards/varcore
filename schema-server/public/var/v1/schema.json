@@ -617,11 +617,11 @@
       "type": "string"
     },
     "DeploymentMode": {
-      "description": "Deployment mode (docs/spec/var-core-v1.0.md §1.1). Run is reserved for v1.1.",
+      "description": "Deployment mode (docs/spec/var-core-v1.0.md §1.1). Attest is reserved for v1.1.",
       "enum": [
-        "crawl",
-        "walk",
-        "run"
+        "observe",
+        "enforce",
+        "attest"
       ],
       "type": "string"
     },
@@ -1232,7 +1232,7 @@
         },
         "mode": {
           "$ref": "#/definitions/DeploymentMode",
-          "description": "Deployment mode active for this session. Defaults to \"walk\"."
+          "description": "Deployment mode active for this session. Defaults to \"enforce\"."
         },
         "money_action_overrides": {
           "description": "Tool names explicitly overridden via unsafe_override: true in policy.",

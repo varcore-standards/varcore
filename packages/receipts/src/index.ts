@@ -43,7 +43,7 @@ export type {
   SignedActionReceipt,
   SignedDeadLetterReceipt,
   SignedWorkflowClosed,
-  // VAR-Money v1.0 / Walk mode new signed types (Session A)
+  // VAR-Money v1.0 / Enforce mode new signed types (Session A)
   SignedPostReceipt,
   SignedRecoveryEvent,
   SignedBudgetWarning,
@@ -79,6 +79,8 @@ export type {
   L4ViolationCode,
   L4Violation,
   L4Result,
+  // Agent class registration (v1.1 draft preview)
+  AgentClassRegistration,
 } from "./types";
 // isValidKeyId is a value (function), not a type — export with plain export
 export { isValidKeyId } from "./types";

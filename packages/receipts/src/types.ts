@@ -9,10 +9,10 @@ export function isValidKeyId(id: string): boolean {
   return /^[a-zA-Z0-9_-]{1,64}$/.test(id);
 }
 
-// ── VAR-Money v1.0 / Walk mode enumerations ───────────────────────────────────
+// ── VAR-Money v1.0 / Enforce mode enumerations ──────────────────────────────
 
-/** Deployment mode (docs/spec/var-core-v1.0.md §1.1). Run is reserved for v1.1. */
-export type DeploymentMode = "crawl" | "walk" | "run";
+/** Deployment mode (docs/spec/var-core-v1.0.md §1.1). Attest is reserved for v1.1. */
+export type DeploymentMode = "observe" | "enforce" | "attest";
 
 /** Taxonomy manifest load status at session start. */
 export type TaxonomyStatus = "OK" | "CACHED" | "UNAVAILABLE";
@@ -167,7 +167,7 @@ export interface WorkflowManifestFields extends BaseReceiptFields {
    */
   declared_tools_fetch_failed?: boolean;
   // ── VAR-Money v1.0 / Session A new signed fields ──────────────────────────
-  /** Deployment mode active for this session. Defaults to "walk". */
+  /** Deployment mode active for this session. Defaults to "enforce". */
   mode?: DeploymentMode;
   /** Status of the VAR-Money taxonomy manifest at session start. */
   taxonomy_status?: TaxonomyStatus;
@@ -185,7 +185,7 @@ export interface WorkflowClosedFields extends BaseReceiptFields {
   close_reason: CloseReason;
 }
 
-// ── New receipt types: VAR-Money v1.0 / Walk mode (Session A) ─────────────────
+// ── New receipt types: VAR-Money v1.0 / Enforce mode (Session A) ─────────────
 //
 // These types do NOT extend BaseReceiptFields because they use type-specific
 // primary IDs (post_receipt_id, recovery_event_id, etc.) per the spec in
@@ -353,6 +353,28 @@ export interface ApprovalReceiptFields extends BaseReceiptFields {
   approval_dir: string;
   /** How long we waited before the decision or timeout (ms). */
   wait_duration_ms: number;
+}
+
+// ── Agent class registration (v1.1 draft preview) ───────────────────────────
+
+/**
+ * A record binding an agent_class_id to its derivation inputs and mandate.
+ * Produced at agent class registration time; not a receipt type itself.
+ * Used by continuity verifiers to detect cross-session omission gaps.
+ */
+export interface AgentClassRegistration {
+  agent_class_id: string;
+  model_id: string;
+  system_prompt_hash: string;
+  tools_manifest_hash: string;
+  mandate_id: string;
+  mandate_version: string;
+  /** receipt_id of the first workflow_manifest for this agent class. */
+  genesis_receipt_id: string;
+  /** ISO 8601 timestamp of registration. */
+  registered_at: string;
+  /** Last known chain_sequence emitted for this agent class. */
+  chain_sequence_head: number;
 }
 
 // Union type for all receipt field sets

@@ -24,13 +24,13 @@
     },
     "mode": {
       "type": "string",
-      "description": "Deployment mode. Defaults to 'crawl' if absent. 'run' is reserved for v1.1.",
-      "enum": ["crawl", "walk"],
-      "default": "crawl"
+      "description": "Deployment mode. Defaults to 'observe' if absent. 'attest' is reserved for v1.1.",
+      "enum": ["observe", "enforce"],
+      "default": "observe"
     },
     "enforcement": {
       "type": "boolean",
-      "description": "If false, the proxy records receipts but does not block any tool calls (observe mode). Equivalent to mode: crawl with no blocking rules.",
+      "description": "If false, the proxy records receipts but does not block any tool calls (observe mode). Equivalent to mode: observe with no blocking rules.",
       "default": false
     },
     "rules": {
@@ -232,7 +232,7 @@
         },
         "projection_id": {
           "type": "string",
-          "description": "Projection definition ID for outcome binding. Required for money actions in Walk/Run mode. References a built-in or operator-defined projection.",
+          "description": "Projection definition ID for outcome binding. Required for money actions in Enforce/Attest mode. References a built-in or operator-defined projection.",
           "pattern": "^[a-zA-Z0-9_-]{1,128}$"
         },
         "max_spend": {
@@ -325,7 +325,7 @@
       "_comment": "Example 1: Minimal — ALLOW + BLOCK rules, no money actions.",
       "var_core_version": "0.1",
       "key_id": "auto",
-      "mode": "walk",
+      "mode": "enforce",
       "enforcement": true,
       "rules": [
         {
@@ -368,7 +368,7 @@
       "var_core_version": "0.1",
       "var_money_version": "1.0",
       "key_id": "auto",
-      "mode": "walk",
+      "mode": "enforce",
       "enforcement": true,
       "rules": [
         {

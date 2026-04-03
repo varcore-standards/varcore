@@ -8,6 +8,10 @@ compatibility_flags = ["nodejs_compat"]
 #   wrangler secret put KEY_NS_PROD_01
 #   wrangler secret put TEST_VECTORS_V1
 
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+
 [[routes]]
 pattern = "schemas.nonsudo.com/*"
 zone_name = "nonsudo.com"

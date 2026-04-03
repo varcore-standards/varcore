@@ -11,7 +11,7 @@
 
 This document is VAR Core v1.0. It defines:
 
-- Deployment modes (Crawl, Walk, Run)
+- Deployment modes (Observe, Enforce, Attest)
 - Verification tiers (L1 through L4)
 - Receipt invariants (RI-1 through RI-10)
 - Degraded mode semantics and normative behavior table
@@ -21,8 +21,8 @@ VAR Core v1.0 applies to **all** NonSudo deployments regardless of vertical. Ver
 extensions — including VAR-Money v1.0 — extend this base without modifying it.
 
 A conformant implementation MUST satisfy all requirements in this document that apply to
-its declared deployment mode. Requirements scoped to specific modes (Walk, Run) are not
-applicable to Crawl deployments.
+its declared deployment mode. Requirements scoped to specific modes (Enforce, Attest) are not
+applicable to Observe deployments.
 
 Field definitions and signing rules are in `docs/reference/contract.md`. Operational
 procedures are in `docs/guides/`. This document defines behavioral rules; it references
@@ -34,16 +34,16 @@ Three deployment modes define the enforcement contract and identity model:
 
 | Mode | Identity Model | Bypassable | Post-receipts Required | Suitable For |
 |------|---------------|------------|----------------------|--------------|
-| **Crawl** | Header-asserted agent ID | Yes — proxy is observe-only | No — action receipts only | Observability, audit prototyping |
-| **Walk** | Header-asserted agent ID + session provenance via signed manifest | Yes — if agent holds credentials outside the proxy | Yes — for money actions (VAR-Money v1.0) | Production enforcement, compliance |
-| **Run** | Workload identity (OIDC / SPIFFE) | No — agent cannot reach upstream without proxy | Yes — for all actions | High-assurance, regulated environments |
+| **Observe** | Header-asserted agent ID | Yes — proxy is observe-only | No — action receipts only | Observability, audit prototyping |
+| **Enforce** | Header-asserted agent ID + session provenance via signed manifest | Yes — if agent holds credentials outside the proxy | Yes — for money actions (VAR-Money v1.0) | Production enforcement, compliance |
+| **Attest** | Workload identity (OIDC / SPIFFE) | No — agent cannot reach upstream without proxy | Yes — for all actions | High-assurance, regulated environments |
 
 **Version scope:**
-- Crawl and Walk are production modes in v1.0.
-- Run is reserved for v1.1. Implementations MUST NOT declare mode `run` in v1.0.
+- Observe and Enforce are production modes in v1.0.
+- Attest is reserved for v1.1. Implementations MUST NOT declare mode `attest` in v1.0.
 
-**Mode declaration:** The deployment mode is declared in `nonsudo.yaml` as `mode: crawl |
-walk | run`. If absent, the default is `crawl`. Mode is committed into the
+**Mode declaration:** The deployment mode is declared in `nonsudo.yaml` as `mode: observe |
+enforce | attest`. If absent, the default is `observe`. Mode is committed into the
 `workflow_manifest` as a signed field.
 
 ### 1.2 Spec Version Identifier
@@ -51,6 +51,37 @@ walk | run`. If absent, the default is `crawl`. Mode is committed into the
 Every receipt MUST carry `spec_version: "var/1.0"`. A verifier encountering an unknown
 `spec_version` MUST return L1: FAIL with reason `UNKNOWN_SPEC_VERSION` and MUST NOT
 attempt further verification.
+
+### 1.3 Mandate Continuity (Preview)
+
+**Status:** Preview — not normative in v1.0. This preview defines field intent and
+interoperability direction only, and does not impose any new v1.0 verifier requirements.
+
+**`agent_class_id`** — a stable, canonical identifier for an agent class, derived
+deterministically from the model identifier, system prompt, and tool set via
+`computeAgentClassId()`. Format: `cls_<32 lowercase hex chars>`. Any change to any of
+these three inputs produces a different `agent_class_id`. Carried as an optional signed
+field on all receipt types.
+
+**`mandate_id`** — identifier of the authorization mandate governing a session. A mandate
+represents the operator's grant of authority to an agent class, binding it to a specific
+policy version. Carried as an optional signed field on all receipt types.
+
+**`mandate_version`** — version identifier for the mandate or governing policy at
+execution time. May be a semantic version, policy revision ID, or other operator-defined
+version string. Carried as an optional signed field on all receipt types.
+
+**`chain_sequence`** — a monotonic counter that increments across ALL sessions of the same
+agent class. Distinct from `sequence_number`, which resets to 0 at the start of each
+session. Carried as an optional signed field on all receipt types.
+
+**Absence-proof chain integrity:** Per-session receipt chains (L2) prove what happened
+within a session, but they cannot prove that no invocation was skipped between sessions.
+An agent can be invoked without governance and leave no trace in any individual session's
+chain. `chain_sequence` accumulates monotonically across all sessions of the same
+`agent_class_id`. A gap in `chain_sequence` across sessions proves that an invocation
+occurred without continuity coverage between those sessions. This is the absence-proof
+primitive that makes cross-session omission detectable.
 
 ---
 
@@ -100,7 +131,7 @@ L2 operates on receipts that passed L1; L1-failed receipts are excluded from L2 
 - The `prev_receipt_hash` of receipt N MUST equal `SHA-256(JCS(complete receipt N-1))`,
   including the `signature` block and all null-valued fields. Violation: `HASH_MISMATCH`.
 - The manifest MUST have `prev_receipt_hash: null`. Violation: `NULL_HASH_EXPECTED`.
-- For Walk and Run mode money actions: RI-1 through RI-3 are enforced at L2.
+- For Enforce and Attest mode money actions: RI-1 through RI-3 are enforced at L2.
 
 **Warnings (do not cause L2: FAIL but are reported):**
 - `DEGRADED_STATE` — state store was unavailable during a recorded action.
@@ -139,8 +170,8 @@ a sidecar is not a failure unless `--require-timestamps` is set.
 
 ### 2.4 L4 — Outcome Binding
 
-L4 applies only to Walk and Run mode deployments using VAR-Money v1.0. It is `N/A` for
-Crawl deployments and for non-money actions in any mode.
+L4 applies only to Enforce and Attest mode deployments using VAR-Money v1.0. It is `N/A` for
+Observe deployments and for non-money actions in any mode.
 
 **Requirements:**
 - Every money action `action_receipt` with `decision: ALLOW` MUST have exactly one terminal
@@ -184,9 +215,9 @@ code `1` takes precedence over all others.
 Each invariant is stated as a normative requirement using RFC 2119 key words. Verifier
 behaviors are stated for each violation.
 
-**RI-1: Money action post-receipt required (Walk/Run only)**
+**RI-1: Money action post-receipt required (Enforce/Attest only)**
 
-Every money action `action_receipt` with `decision: ALLOW` in Walk or Run mode MUST have
+Every money action `action_receipt` with `decision: ALLOW` in Enforce or Attest mode MUST have
 exactly one terminal `post_receipt` with a matching `pre_receipt_id`.
 
 *Verifier behavior:* L4: FAIL — `MISSING_POST_RECEIPT` if the chain contains an ALLOW
@@ -289,9 +320,9 @@ not match `post_receipt.projection_hash`.
 
 | Mode | Money actions | Read-only actions |
 |------|--------------|-------------------|
-| Walk | FAIL CLOSED — proxy refuses to execute and emits a dead-letter receipt on recovery | FAIL OPEN — pass-through; no receipt on crash |
-| Crawl | FAIL OPEN always | FAIL OPEN always |
-| Run | FAIL CLOSED always | FAIL CLOSED always |
+| Enforce | FAIL CLOSED — proxy refuses to execute and emits a dead-letter receipt on recovery | FAIL OPEN — pass-through; no receipt on crash |
+| Observe | FAIL OPEN always | FAIL OPEN always |
+| Attest | FAIL CLOSED always | FAIL CLOSED always |
 
 A proxy recovering from a crash MUST emit a `recovery_event` receipt before resuming
 normal operation.
@@ -326,7 +357,7 @@ written, and the verifier output.
 | **TSA unavailable** — TSA request fails or times out | Non-blocking; do not block the tool call | No change to pre/post receipts; sidecar entry absent or PENDING | L3: SKIPPED or L3: PENDING (not a failure) |
 | **Taxonomy unavailable** — VAR-Money taxonomy network fetch fails at startup | Continue with last cached taxonomy; if no cache, disable taxonomy warnings for the session | `workflow_manifest` carries `taxonomy_status: CACHED` or `taxonomy_status: UNAVAILABLE` | L2: WARN — `TAXONOMY_CACHED` if cached; no warning if UNAVAILABLE (no baseline to compare) |
 | **Queue worker crash** — evaluation worker process exits | In-flight actions get terminal `post_receipt` with `terminal_outcome: TIMEOUT` on recovery | `post_receipt` (TIMEOUT) emitted at restart for each orphaned `action_receipt` | L2: PASS |
-| **Proxy process crash** — SIGKILL or OOM | Walk money actions: FAIL CLOSED; read-only: pass-through; Crawl: pass-through | `recovery_event` receipt + `post_receipt` (CANCELED) for each orphaned pre-receipt | L2: PASS + `CRASH_RECOVERY` note |
+| **Proxy process crash** — SIGKILL or OOM | Enforce money actions: FAIL CLOSED; read-only: pass-through; Observe: pass-through | `recovery_event` receipt + `post_receipt` (CANCELED) for each orphaned pre-receipt | L2: PASS + `CRASH_RECOVERY` note |
 | **Budget cap at 90%** — `spent + reserved ≥ 0.9 × cap` | Emit warning receipt; continue normal policy enforcement | `budget_warning` receipt (signed, `threshold_pct: 90`) | L4: WARN — `BUDGET_WARNING` |
 | **Budget cap at 100%** — `spent + reserved ≥ cap` | All money actions require STEP_UP regardless of policy rule | `action_receipt` (STEP_UP) for every subsequent money action | L4: WARN — `BUDGET_CAP_ENFORCED` |
 
@@ -397,11 +428,11 @@ A deployment is conformant with VAR Core v1.0 if and only if:
 3. All field names match `docs/reference/contract.md §3` exactly.
 4. JCS (RFC 8785) is used for signing payload canonicalization.
 5. The proxy implements the degraded-mode behaviors specified in Section 4.
-6. For Walk/Run deployments with VAR-Money v1.0: RI-1 through RI-10 are satisfied.
+6. For Enforce/Attest deployments with VAR-Money v1.0: RI-1 through RI-10 are satisfied.
 7. All test vectors in the published conformance suite produce the expected results.
 
-A Crawl deployment that satisfies requirements 1–4 and 7 is conformant. RI-1 through RI-10
-and the degraded-mode behaviors for money actions are not applicable to Crawl deployments.
+An Observe deployment that satisfies requirements 1–4 and 7 is conformant. RI-1 through RI-10
+and the degraded-mode behaviors for money actions are not applicable to Observe deployments.
 
 ---
 

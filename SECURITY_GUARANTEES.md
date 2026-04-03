@@ -20,7 +20,7 @@ Source: RI-1 through RI-10, `docs/spec/var-core-v1.0.md §3`.
 | RI-6 | `spent + reserved <= max_spend` MUST hold before every ALLOW | L4: FAIL `BUDGET_INVARIANT_VIOLATED` | In-memory budget state check |
 | RI-7 | Duplicate dedupe tuple MUST NOT increase spent/reserved | L4: WARN `DUPLICATE_IDEMPOTENCY_KEY` | Dedupe index on `(tool_name, action_type, idempotency_key, account_context)` |
 | RI-8 | Projection: omit_if_null first, transforms in order, JCS, SHA-256 | L4: FAIL `PROJECTION_HASH_MISMATCH` | Deterministic evaluation pipeline |
-| RI-9 | Walk money actions fail closed on crash; Run fails closed for all; Crawl fails open | L2: missing `recovery_event` | Mode-specific crash handler |
+| RI-9 | Enforce money actions fail closed on crash; Attest fails closed for all; Observe fails open | L2: missing `recovery_event` | Mode-specific crash handler |
 | RI-10 | Post-restart open-pre index MUST be integrity-checked; corrupt state requires STEP_UP | L2: WARN `RECOVERY_INCOMPLETE` | Bounded scan (30 min or 1000 receipts) |
 
 **Operational invariant: Policy bundle hash binding.** `policy_bundle_hash` (SHA-256 of the active policy) is signed into every receipt. Any policy change produces a different hash. A verifier walking the chain SHALL identify the exact receipt at which policy changed — forensic traceability not available from policy-external audit logs.
@@ -51,9 +51,9 @@ On proxy crash: open-pre index integrity check. If corrupt: bounded scan, then `
 
 ## 4. Enforcement Mode Guarantees
 
-**Walk mode** (`enforcement: true`): Every tool call evaluated. FAIL_CLOSED default. Receipts for every decision. Budget enforcement active. *Does not guarantee:* policy correctness (operator-declared), coverage of out-of-band credentials the agent holds.
+**Enforce mode** (`enforcement: true`): Every tool call evaluated. FAIL_CLOSED default. Receipts for every decision. Budget enforcement active. *Does not guarantee:* policy correctness (operator-declared), coverage of out-of-band credentials the agent holds.
 
-**Crawl mode** (`mode: "crawl"`): Pure pass-through. No policy evaluation, no receipts beyond action_receipts. *Guarantees:* zero enforcement overhead, zero blocking. *Does not guarantee:* any governance property.
+**Observe mode** (`mode: "observe"`): Pure pass-through. No policy evaluation, no receipts beyond action_receipts. *Guarantees:* zero enforcement overhead, zero blocking. *Does not guarantee:* any governance property.
 
 **Shadow mode** (`enforcement: false`): Receipts written, no blocking. *Guarantees:* continuous forensic record from day one. *Does not guarantee:* policy enforcement — ALLOW and BLOCK produce identical runtime behavior.
 
@@ -65,13 +65,13 @@ Source: `docs/spec/run-mode-design.md §2`.
 
 | Path | Scope | Classification |
 |---|---|---|
-| **Direct credential bypass** — agent holds API keys, calls upstreams directly | Walk, Crawl | By design |
-| **Alternate network path** — egress routes bypass the proxy | Walk, Crawl | By design |
-| **Out-of-band tool implementations** — tool registered via adapter and as raw HTTP | Walk, Crawl | Known gap (misconfiguration) |
+| **Direct credential bypass** — agent holds API keys, calls upstreams directly | Enforce, Observe | By design |
+| **Alternate network path** — egress routes bypass the proxy | Enforce, Observe | By design |
+| **Out-of-band tool implementations** — tool registered via adapter and as raw HTTP | Enforce, Observe | Known gap (misconfiguration) |
 | **Human backchannel** — agent asks human to act outside NonSudo | All modes | By design (unfixable at proxy layer) |
-| **Observability-only config** — crawl/shadow set accidentally | All modes | Misconfiguration (detectable via policy_bundle_hash) |
+| **Observability-only config** — observe/shadow set accidentally | All modes | Misconfiguration (detectable via policy_bundle_hash) |
 
-Run mode (v1.1) closes the first three paths via secretless execution, workload identity, and constrained egress.
+Attest mode (v1.1) closes the first three paths via secretless execution, workload identity, and constrained egress.
 
 ---
 
