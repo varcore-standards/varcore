@@ -217,7 +217,7 @@ program
 
 program
   .command('observe')
-  .description('Start an observe-mode proxy that logs tool calls without enforcement')
+  .description('Start an observe-mode proxy that writes local observe logs (not signed VAR receipts)')
   .option('--port <number>', 'Proxy listen port', '3100')
   .option('--upstream <url>', 'Upstream URL to forward requests to', 'http://localhost:3001')
   .option('--config <path>', 'Path to nonsudo.yaml config file')

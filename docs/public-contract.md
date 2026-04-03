@@ -88,4 +88,34 @@ enforce "no refunds over $500."
 
 ---
 
+---
+
+## CLI Commands (nonsudo v1.3.0)
+
+| Command | Description |
+|---------|-------------|
+| `nonsudo init` | Generate signing keypair, scaffold nonsudo.yaml, patch IDE configs |
+| `nonsudo observe` | Start an observe-mode proxy that logs tool calls (local telemetry, not signed VAR receipts) |
+| `nonsudo verify <file>` | Verify an NDJSON receipt chain (L1 + L2, optionally L3 + L4) |
+| `nonsudo schemas list` | List all available schema packs |
+| `nonsudo schemas show <id>` | Show rules for a schema pack |
+| `nonsudo keys list` | List all keypairs in ~/.nonsudo/keys/ |
+| `nonsudo keys export <kid>` | Export the public key for a key_id |
+| `nonsudo health` | Run diagnostic checks across keys, policy, db, chain, network, env |
+| `nonsudo index <file>` | Index an NDJSON receipt file into the receipt store |
+| `nonsudo query` | Query the receipt store with filters |
+| `nonsudo report` | Generate a workflow summary report |
+| `nonsudo test <file>` | Replay receipt chain against current policy to detect drift |
+| `nonsudo watch [file]` | Watch a live receipts.ndjson file and print receipts in real time |
+
+## Programmatic API (nonsudo v1.3.0)
+
+| Export | Description |
+|--------|-------------|
+| `startObserveProxy(config)` | Start the observe-mode proxy programmatically |
+| `loadObserveConfig(yamlPath?)` | Load and merge observe proxy configuration |
+| `runInit(configPath)` | Run the init workflow (keypair + config + IDE patching) |
+
+---
+
 *NonSudo, Inc. — [Technical reference](reference/contract.md) — [Core spec](spec/var-core-v1.0.md)*

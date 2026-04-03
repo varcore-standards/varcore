@@ -45,10 +45,31 @@ import { ReceiptStore } from 'nonsudo/store';
 ## CLI
 
 ```bash
+nonsudo init                           # generate keypair + scaffold config
+nonsudo observe                        # start observe proxy (local telemetry)
 nonsudo verify receipts.ndjson         # L1 + L2 verification
 nonsudo verify receipts.ndjson --full  # L1 + L2 + L3 + L4
 nonsudo conform                        # conformance test vectors
+nonsudo schemas list                   # list available schema packs
+nonsudo keys list                      # list signing keypairs
+nonsudo health                         # run diagnostic checks
+nonsudo query --tool stripe_charge     # query the receipt store
+nonsudo report --workflow-id <id>      # generate workflow report
+nonsudo test receipts.ndjson           # replay chain against current policy
+nonsudo watch                          # watch live receipt stream
+nonsudo index receipts.ndjson          # index receipts into store
 ```
+
+## Observe logs vs signed VAR receipts
+
+`nonsudo observe` writes local observe logs for developer visibility.
+These logs are not signed VAR receipts and are not a cryptographic
+audit chain. They are lightweight telemetry for understanding what your
+agent is doing during development.
+
+For cryptographically signed, hash-chained, timestamped VAR receipts
+suitable for compliance, audit, or regulatory use — see the
+[NonSudo platform quickstart](https://nonsudo.com/docs/quickstart).
 
 ## For implementers
 

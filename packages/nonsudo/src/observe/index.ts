@@ -34,6 +34,7 @@ export async function startObserveProxy(config: ObserveConfig): Promise<void> {
     }
     console.log(`Key           ${keypair.keyId}`);
     console.log(`Workflow      ${workflowId}`);
+    console.log(`Note          Observe logs are local telemetry. For signed VAR receipts, use the platform.`);
     console.log("");
   });
 
