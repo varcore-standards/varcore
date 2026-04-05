@@ -311,34 +311,19 @@ program
 
 program
   .command('query')
-  .description('Query the receipt store')
+  .description('Query an NDJSON receipt file')
+  .option('--file <path>', 'Path to .ndjson receipts file (required)')
   .option('--workflow-id <id>', 'Filter by workflow_id')
   .option('--agent <id>', 'Filter by agent_id')
   .option('--tool <name>', 'Filter by tool_name')
   .option('--decision <value>', 'Filter by decision')
-  .option('--from <date>', 'YYYY-MM-DD lower bound on issued_at')
-  .option('--to <date>', 'YYYY-MM-DD upper bound on issued_at')
   .option('--record-type <type>', 'Filter by record_type')
-  .option('--limit <n>', 'Max results (default: 100)', parseInt)
+  .option('--since <duration>', 'Filter by time window (e.g. 1h, 30m, 7d)')
+  .option('--limit <n>', 'Max results (default: 50)', parseInt)
   .option('--format <format>', 'Output format: table | json | csv')
-  .option('--db <path>', 'Database path (default: ~/.nonsudo/receipts.db)')
   .action(async (opts) => {
     const { runQuery } = require('../dist/commands/query.js');
     const exitCode = await runQuery(opts);
-    process.exit(exitCode);
-  });
-
-// ── index ────────────────────────────────────────────────────────────────
-
-program
-  .command('index')
-  .description('Index an NDJSON receipt file into the receipt store')
-  .argument('<file>', 'Path to NDJSON receipt file')
-  .option('--db <path>', 'Database path (default: ~/.nonsudo/receipts.db)')
-  .option('--reverify', 'Recompute L1/L2/L3 for all receipts from this file')
-  .action(async (file, opts) => {
-    const { runIndex } = require('../dist/commands/index-command.js');
-    const exitCode = await runIndex(file, opts);
     process.exit(exitCode);
   });
 
@@ -351,11 +336,6 @@ program
   .option('--receipts <path>', 'Receipts directory for --workflow')
   .option('--output <path>', 'Write report to file instead of stdout')
   .option('--policy <path>', 'Policy file for L4 budget verification')
-  .option('--workflow-id <id>', 'Generate report for a single workflow from store')
-  .option('--all', 'Generate report for all workflows in store')
-  .option('--from <date>', 'Workflows initiated after this date')
-  .option('--to <date>', 'Workflows initiated before this date')
-  .option('--db <path>', 'Database path for store')
   .action(async (opts) => {
     const { runReport } = require('../dist/commands/report.js');
     const exitCode = await runReport(opts);

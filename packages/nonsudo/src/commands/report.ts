@@ -1,107 +1,19 @@
 /**
  * nonsudo report [options]
  *
- * Two modes:
- * 1. File-based: --workflow <id> — reads ~/.nonsudo/receipts/<id>.ndjson, outputs Markdown report.
- * 2. Store-based: --workflow-id <id> | --all — uses receipt store (PlainTextReportRenderer).
+ * File-based: --workflow <id> — reads ~/.nonsudo/receipts/<id>.ndjson, outputs Markdown report.
  */
 
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import {
-  ReceiptStore,
-  ReceiptRow,
-  WorkflowSummary,
-  ReportRenderer,
-} from "@varcore/store";
 import { loadTsaSidecar } from "@varcore/receipts";
 import type { SignedReceipt } from "@varcore/receipts";
 import { readReceiptsFile } from "../receipts-reader";
 import { resolvePublicKey, verifyReceipts } from "./verify";
 
-const DEFAULT_DB = path.join(os.homedir(), ".nonsudo", "receipts.db");
 const DEFAULT_RECEIPTS_DIR = path.join(os.homedir(), ".nonsudo", "receipts");
 const DEFAULT_BUDGET_CAP_MINOR = 50_000;
-
-// ── Plain text renderer ─────────────────────────────────────────────────────
-
-function pad(s: string, n: number): string {
-  return s.length >= n ? s : s + " ".repeat(n - s.length);
-}
-
-export class PlainTextReportRenderer implements ReportRenderer {
-  readonly extension = "txt";
-
-  async render(
-    workflows: WorkflowSummary[],
-    receipts: Map<string, ReceiptRow[]>
-  ): Promise<void> {
-    const lines: string[] = [];
-    const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-
-    lines.push(`NonSudo Verifiable Action Receipt Report`);
-    lines.push(`Generated: ${now} · NonSudo v1.0.0`);
-    lines.push(``);
-    lines.push(
-      `NOTE: This report presents cryptographically verifiable evidence of AI agent tool call activity.`
-    );
-    lines.push(
-      `It does not constitute legal compliance certification. To independently verify: nonsudo verify <receipts_file>`
-    );
-
-    const ruler = "─".repeat(77);
-
-    for (const wf of workflows) {
-      lines.push(``);
-      lines.push(ruler);
-      lines.push(`Workflow: ${wf.workflow_id}`);
-      lines.push(`Agent:    ${wf.agent_id}`);
-      lines.push(`Started:  ${wf.initiated_at}`);
-
-      const closeStr = wf.closed_at
-        ? `${wf.closed_at}${wf.close_reason ? ` (${wf.close_reason})` : ""}`
-        : "open";
-      lines.push(`Closed:   ${closeStr}`);
-
-      const durationMs = wf.session_duration_ms ?? 0;
-      const calls = wf.total_calls ?? "—";
-      const blocked = wf.total_blocked ?? "—";
-      lines.push(
-        `Duration: ${durationMs.toLocaleString()}ms · Calls: ${calls} · Blocked: ${blocked} · Complete: ${wf.complete ? "yes" : "no"}`
-      );
-      lines.push(``);
-
-      const wfReceipts = receipts.get(wf.workflow_id) ?? [];
-      lines.push(
-        `  ${pad("Seq", 5)}  ${pad("Type", 20)}  ${pad("Tool", 22)}  ${pad("Decision", 12)}  ${pad("L1", 6)}  ${pad("L2", 6)}  ${pad("L3", 6)}`
-      );
-      lines.push(
-        `  ${pad("─".repeat(5), 5)}  ${pad("─".repeat(20), 20)}  ${pad("─".repeat(22), 22)}  ${pad("─".repeat(12), 12)}  ${pad("──────", 6)}  ${pad("──────", 6)}  ${pad("──────", 6)}`
-      );
-
-      for (const r of wfReceipts) {
-        const rt = r.record_type;
-        const tool = (rt === "action_receipt" ? r.tool_name : "—") ?? "—";
-        const decision = (rt === "action_receipt" ? r.decision : "—") ?? "—";
-        lines.push(
-          `  ${pad(String(r.sequence_number), 5)}  ${pad(rt, 20)}  ${pad(tool, 22)}  ${pad(decision, 12)}  ${pad(r.l1_status, 6)}  ${pad(r.l2_status.split(":")[0], 6)}  ${pad(r.l3_status, 6)}`
-        );
-      }
-
-      const allL1Pass = wfReceipts.every((r) => r.l1_status === "PASS");
-      const allL2Pass = wfReceipts.every(
-        (r) => r.l2_status === "PASS" || r.l2_status.startsWith("PASS")
-      );
-      const chainIntegrity = allL1Pass && allL2Pass ? "PASS" : "FAIL";
-      lines.push(``);
-      lines.push(`Chain integrity: ${chainIntegrity}`);
-    }
-
-    lines.push(ruler);
-    process.stdout.write(lines.join("\n") + "\n");
-  }
-}
 
 // ── File-based report helpers ───────────────────────────────────────────────
 
@@ -414,15 +326,9 @@ async function runReportFromFile(options: {
 
 export interface ReportOptions {
   workflow?: string;
-  workflowId?: string;
-  all?: boolean;
-  from?: string;
-  to?: string;
   output?: string;
-  db?: string;
   receipts?: string;
   policy?: string;
-  renderer?: ReportRenderer;
 }
 
 export async function runReport(options: ReportOptions = {}): Promise<number> {
@@ -435,86 +341,10 @@ export async function runReport(options: ReportOptions = {}): Promise<number> {
     });
   }
 
-  if (!options.workflowId && !options.all) {
-    process.stderr.write(
-      `nonsudo report: requires --workflow <id> or exactly one of --workflow-id <id> or --all\n` +
-        `Usage: nonsudo report --workflow <id> [--receipts <path>] [--output <path>] [--policy <path>]\n` +
-        `   or: nonsudo report --workflow-id <id> | --all [--from <date>] [--to <date>] [--output <path>] [--db <path>]\n`
-    );
-    return 1;
-  }
-  if (options.workflowId && options.all) {
-    process.stderr.write(
-      `nonsudo report: cannot specify both --workflow-id and --all\n`
-    );
-    return 1;
-  }
-
-  const dbFilePath = options.db ?? DEFAULT_DB;
-  let store: ReceiptStore;
-  try {
-    store = ReceiptStore.open(dbFilePath);
-  } catch (err) {
-    process.stderr.write(
-      `nonsudo report: could not open database ${dbFilePath}: ${err instanceof Error ? err.message : String(err)}\n`
-    );
-    return 1;
-  }
-
-  try {
-    let workflows: WorkflowSummary[];
-
-    if (options.workflowId) {
-      const wf = store.getWorkflow(options.workflowId);
-      if (!wf) {
-        process.stderr.write(
-          `nonsudo report: workflow not found: ${options.workflowId}\n`
-        );
-        return 1;
-      }
-      workflows = [wf];
-    } else {
-      const all = store.listWorkflows();
-      workflows = all.filter((wf) => {
-        if (options.from && wf.initiated_at < options.from) return false;
-        if (options.to && wf.initiated_at > options.to + "T23:59:59Z") return false;
-        return true;
-      });
-    }
-
-    const receiptsMap = new Map<string, ReceiptRow[]>();
-    for (const wf of workflows) {
-      receiptsMap.set(wf.workflow_id, store.getWorkflowReceipts(wf.workflow_id));
-    }
-
-    const renderer = options.renderer ?? new PlainTextReportRenderer();
-    const outputPath = options.output;
-
-    if (outputPath) {
-      const resolvedOutput = path.resolve(outputPath);
-      const ws = fs.createWriteStream(resolvedOutput);
-      const origWrite = process.stdout.write.bind(process.stdout);
-      process.stdout.write = (chunk: string | Uint8Array) => {
-        ws.write(chunk);
-        return true;
-      };
-      try {
-        await renderer.render(workflows, receiptsMap);
-      } finally {
-        process.stdout.write = origWrite;
-        await new Promise<void>((resolve, reject) =>
-          ws.close((err) => (err ? reject(err) : resolve()))
-        );
-      }
-      process.stdout.write(
-        `Report written to: ${resolvedOutput}\n`
-      );
-    } else {
-      await renderer.render(workflows, receiptsMap);
-    }
-  } finally {
-    store.close();
-  }
-
-  return 0;
+  process.stderr.write(
+    "Usage: nonsudo report --workflow <id>\n" +
+    "       [--receipts <path>] [--output <path>]" +
+    " [--policy <path>]\n"
+  );
+  return 1;
 }

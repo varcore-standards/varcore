@@ -38,10 +38,6 @@
     "./adapter-langchain": {
       "types": "./dist/adapter-langchain.d.ts",
       "default": "./dist/adapter-langchain.js"
-    },
-    "./store": {
-      "types": "./dist/store.d.ts",
-      "default": "./dist/store.js"
     }
   },
   "bin": {
@@ -62,7 +58,6 @@
     "@varcore/core": "^1.2.1",
     "@varcore/receipts": "^1.2.2",
     "@varcore/policy": "^1.2.6",
-    "@varcore/store": "^1.2.1",
     "@varcore/adapter-openai": "^1.2.3",
     "@varcore/adapter-langchain": "^1.2.3",
     "commander": "^12.0.0",

@@ -1,15 +1,13 @@
 /**
  * nonsudo query [options]
  *
- * Queries the receipt store with optional filters. Output formats: table (default),
- * json, csv. When --workflow-id is specified, prepends a workflow summary header.
+ * Queries an NDJSON receipt file with optional filters.
+ * Output formats: table (default), json, csv.
  */
 
-import * as os from "os";
-import * as path from "path";
-import { ReceiptStore, ReceiptRow, WorkflowSummary } from "@varcore/store";
-
-const DEFAULT_DB = path.join(os.homedir(), ".nonsudo", "receipts.db");
+import * as fs from "fs";
+import { readReceiptsFile } from "../receipts-reader";
+import type { SignedReceipt } from "@varcore/receipts";
 
 // ── Formatting ────────────────────────────────────────────────────────────────
 
@@ -17,83 +15,71 @@ function truncate(s: string, len: number): string {
   return s.length > len ? s.slice(0, len) : s;
 }
 
-function pad(s: string, n: number): string {
+function padRight(s: string, n: number): string {
   return s.length >= n ? s : s + " ".repeat(n - s.length);
 }
 
-function formatWorkflowHeader(wf: WorkflowSummary): string {
-  const durationStr = wf.session_duration_ms != null
-    ? `${wf.session_duration_ms.toLocaleString()}ms`
-    : "—";
-  const callsStr = wf.total_calls != null ? String(wf.total_calls) : "—";
-  const blockedStr = wf.total_blocked != null ? String(wf.total_blocked) : "—";
-  const closeInfo = wf.closed_at
-    ? `${wf.closed_at}${wf.close_reason ? ` (${wf.close_reason})` : ""}`
-    : "open";
-
-  return [
-    `Workflow: ${wf.workflow_id}`,
-    `  Agent:    ${wf.agent_id}`,
-    `  Started:  ${wf.initiated_at}`,
-    `  Closed:   ${closeInfo}`,
-    `  Duration: ${durationStr} · Calls: ${callsStr} · Blocked: ${blockedStr} · Complete: ${wf.complete ? "yes" : "no"}`,
-    "",
-  ].join("\n");
+function padLeft(s: string, n: number): string {
+  return s.length >= n ? s : " ".repeat(n - s.length) + s;
 }
 
-function formatReceiptsTable(rows: ReceiptRow[], withWorkflowId: boolean): string {
-  const lines: string[] = [];
-
-  if (!withWorkflowId) {
-    lines.push(
-      `  ${pad("receipt_id", 10)}  ${pad("workflow_id", 10)}  ${pad("seq", 4)}  ${pad("tool_name", 18)}  ${pad("decision", 10)}  ${pad("issued_at", 20)}  ${pad("L1", 6)}  ${pad("L2", 6)}  ${pad("L3", 6)}`
-    );
-    lines.push(
-      `  ${pad("─".repeat(10), 10)}  ${pad("─".repeat(10), 10)}  ${pad("───", 4)}  ${pad("─".repeat(18), 18)}  ${pad("─".repeat(10), 10)}  ${pad("─".repeat(20), 20)}  ${pad("──────", 6)}  ${pad("──────", 6)}  ${pad("──────", 6)}`
-    );
-    for (const r of rows) {
-      lines.push(
-        `  ${pad(truncate(r.receipt_id, 10), 10)}  ${pad(truncate(r.workflow_id, 10), 10)}  ${pad(String(r.sequence_number), 4)}  ${pad(r.tool_name ?? "—", 18)}  ${pad(r.decision ?? "—", 10)}  ${pad(r.issued_at, 20)}  ${pad(r.l1_status, 6)}  ${pad(r.l2_status.split(":")[0], 6)}  ${pad(r.l3_status, 6)}`
-      );
-    }
-  } else {
-    lines.push(
-      `  ${pad("receipt_id", 10)}  ${pad("seq", 4)}  ${pad("record_type", 18)}  ${pad("tool", 18)}  ${pad("decision", 10)}  ${pad("L1", 6)}  ${pad("L2", 6)}  ${pad("L3", 6)}`
-    );
-    lines.push(
-      `  ${pad("─".repeat(10), 10)}  ${pad("───", 4)}  ${pad("─".repeat(18), 18)}  ${pad("─".repeat(18), 18)}  ${pad("─".repeat(10), 10)}  ${pad("──────", 6)}  ${pad("──────", 6)}  ${pad("──────", 6)}`
-    );
-    for (const r of rows) {
-      lines.push(
-        `  ${pad(truncate(r.receipt_id, 10), 10)}  ${pad(String(r.sequence_number), 4)}  ${pad(r.record_type, 18)}  ${pad(r.tool_name ?? "—", 18)}  ${pad(r.decision ?? "—", 10)}  ${pad(r.l1_status, 6)}  ${pad(r.l2_status.split(":")[0], 6)}  ${pad(r.l3_status, 6)}`
-      );
-    }
+function parseSince(since: string): number {
+  const match = since.match(/^(\d+)([mhd])$/);
+  if (!match) return NaN;
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  switch (unit) {
+    case "m": return value * 60 * 1000;
+    case "h": return value * 60 * 60 * 1000;
+    case "d": return value * 24 * 60 * 60 * 1000;
+    default: return NaN;
   }
+}
 
+function formatTable(receipts: SignedReceipt[]): string {
+  const lines: string[] = [];
+  lines.push(
+    `  ${padLeft("SEQ", 5)}  ${padRight("TYPE", 22)}  ${padRight("TOOL", 22)}  ${padRight("DECISION", 12)}  ${padRight("ISSUED_AT", 20)}`
+  );
+  lines.push(
+    `  ${padRight("─".repeat(5), 5)}  ${padRight("─".repeat(22), 22)}  ${padRight("─".repeat(22), 22)}  ${padRight("─".repeat(12), 12)}  ${padRight("─".repeat(20), 20)}`
+  );
+  for (const r of receipts) {
+    const rr = r as unknown as Record<string, unknown>;
+    const seq = padLeft(String(r.sequence_number), 5);
+    const type = padRight(truncate(r.record_type, 22), 22);
+    const tool = padRight(
+      truncate(r.record_type === "action_receipt" ? ((rr.tool_name as string) ?? "—") : "—", 22),
+      22
+    );
+    const decision = padRight(
+      truncate(r.record_type === "action_receipt" ? ((rr.decision as string) ?? "—") : "—", 12),
+      12
+    );
+    const issuedAt = padRight(r.issued_at.slice(0, 19), 20);
+    lines.push(`  ${seq}  ${type}  ${tool}  ${decision}  ${issuedAt}`);
+  }
   return lines.join("\n");
 }
 
-function formatReceiptsJson(rows: ReceiptRow[]): string {
-  return JSON.stringify(rows, null, 2);
-}
-
-function formatReceiptsCsv(rows: ReceiptRow[]): string {
-  if (rows.length === 0) return "";
-  const headers = Object.keys(rows[0]) as (keyof ReceiptRow)[];
+function formatCsv(receipts: SignedReceipt[]): string {
+  if (receipts.length === 0) return "";
+  const headers = Object.keys(receipts[0]);
   const csvLines = [
     headers.join(","),
-    ...rows.map((r) =>
-      headers
+    ...receipts.map((r) => {
+      const rr = r as unknown as Record<string, unknown>;
+      return headers
         .map((h) => {
-          const val = r[h];
+          const val = rr[h];
           if (val === null || val === undefined) return "";
-          const s = String(val);
+          const s = typeof val === "object" ? JSON.stringify(val) : String(val);
           return s.includes(",") || s.includes('"') || s.includes("\n")
             ? `"${s.replace(/"/g, '""')}"`
             : s;
         })
-        .join(",")
-    ),
+        .join(",");
+    }),
   ];
   return csvLines.join("\n");
 }
@@ -101,70 +87,88 @@ function formatReceiptsCsv(rows: ReceiptRow[]): string {
 // ── Export ───────────────────────────────────────────────────────────────────
 
 export interface QueryOptions {
+  file: string;
   workflowId?: string;
   agent?: string;
   tool?: string;
   decision?: string;
-  from?: string;
-  to?: string;
   recordType?: string;
+  since?: string;
   limit?: number;
   format?: "table" | "json" | "csv";
-  db?: string;
 }
 
-export async function runQuery(options: QueryOptions = {}): Promise<number> {
-  const dbFilePath = options.db ?? DEFAULT_DB;
-  const fmt = options.format ?? "table";
-
-  let store: ReceiptStore;
-  try {
-    store = ReceiptStore.open(dbFilePath);
-  } catch (err) {
+export async function runQuery(options: QueryOptions): Promise<number> {
+  if (!options.file) {
     process.stderr.write(
-      `nonsudo query: could not open database ${dbFilePath}: ${err instanceof Error ? err.message : String(err)}\n`
+      "Usage: nonsudo query --file <path> [--workflow-id <id>] [--tool <name>]\n" +
+      "       [--agent <id>] [--decision <d>] [--record-type <t>]\n" +
+      "       [--since <duration>] [--limit <n>] [--format table|json|csv]\n"
     );
     return 1;
   }
 
-  try {
-    const rows = store.queryReceipts({
-      workflow_id: options.workflowId,
-      agent_id: options.agent,
-      tool_name: options.tool,
-      decision: options.decision,
-      from: options.from,
-      to: options.to,
-      record_type: options.recordType,
-      limit: options.limit ?? 100,
-    });
-
-    if (fmt === "json") {
-      process.stdout.write(formatReceiptsJson(rows) + "\n");
-      return 0;
-    }
-
-    if (fmt === "csv") {
-      process.stdout.write(formatReceiptsCsv(rows) + "\n");
-      return 0;
-    }
-
-    let output = "";
-
-    if (options.workflowId) {
-      const wf = store.getWorkflow(options.workflowId);
-      if (wf) {
-        output += formatWorkflowHeader(wf);
-      } else {
-        output += `Workflow: ${options.workflowId} (not found in store)\n\n`;
-      }
-    }
-
-    output += formatReceiptsTable(rows, options.workflowId !== undefined) + "\n";
-    process.stdout.write(output);
-  } finally {
-    store.close();
+  if (!fs.existsSync(options.file)) {
+    process.stderr.write(`nonsudo query: file not found: ${options.file}\n`);
+    return 1;
   }
 
+  let sinceMs: number | undefined;
+  if (options.since) {
+    sinceMs = parseSince(options.since);
+    if (isNaN(sinceMs)) {
+      process.stderr.write(
+        `nonsudo query: invalid --since format "${options.since}". Use e.g. 30m, 1h, 24h, 7d\n`
+      );
+      return 1;
+    }
+  }
+
+  let receipts: SignedReceipt[];
+  try {
+    receipts = readReceiptsFile(options.file);
+  } catch (err) {
+    process.stderr.write(
+      `nonsudo query: failed to read file: ${err instanceof Error ? err.message : String(err)}\n`
+    );
+    return 1;
+  }
+
+  const now = Date.now();
+  const limit = options.limit ?? 50;
+  const fmt = options.format ?? "table";
+
+  let filtered = receipts.filter((r) => {
+    const rr = r as unknown as Record<string, unknown>;
+    if (options.workflowId && r.workflow_id !== options.workflowId) return false;
+    if (options.agent && r.agent_id !== options.agent) return false;
+    if (options.tool && (rr.tool_name as string) !== options.tool) return false;
+    if (options.decision && (rr.decision as string) !== options.decision) return false;
+    if (options.recordType && r.record_type !== options.recordType) return false;
+    if (sinceMs !== undefined) {
+      const issuedMs = new Date(r.issued_at).getTime();
+      if (issuedMs < now - sinceMs) return false;
+    }
+    return true;
+  });
+
+  filtered = filtered.slice(0, limit);
+
+  if (filtered.length === 0) {
+    process.stdout.write("(no receipts match filters)\n");
+    return 0;
+  }
+
+  if (fmt === "json") {
+    process.stdout.write(JSON.stringify(filtered, null, 2) + "\n");
+    return 0;
+  }
+
+  if (fmt === "csv") {
+    process.stdout.write(formatCsv(filtered) + "\n");
+    return 0;
+  }
+
+  process.stdout.write(formatTable(filtered) + "\n");
   return 0;
 }
