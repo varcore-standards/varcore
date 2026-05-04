@@ -1,4 +1,4 @@
-# VAR-Core
+# tracescale
 
 **Open standard for cryptographic AI agent action receipts.**
 
